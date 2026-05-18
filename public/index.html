@@ -1,0 +1,3205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotizador KAM · Grupo Comercial Atlas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init({ publicKey: 'PjT52wA-rrrMY0rY0' });</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --atlas-navy: #C8202F;
+  --atlas-red: #C8202F;
+  --atlas-red-light: #FCEAEB;
+  --atlas-navy-light: #EEF2FA;
+  --atlas-gold: #D4A017;
+  --bg: #F0F2F7;
+  --surface: #FFFFFF;
+  --surface2: #F7F8FB;
+  --border: #E2E6EF;
+  --border2: #C8CEDC;
+  --text: #1A1E2E;
+  --text2: #4A5068;
+  --text3: #8A90A8;
+  --success: #1A6B3A;
+  --success-bg: #E6F4EC;
+  --warning: #8A5C00;
+  --warning-bg: #FEF3D7;
+  --danger: #C8202F;
+  --danger-bg: #FCEAEB;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --font: 'Outfit', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+
+/* ====== UTILS ====== */
+.hidden{display:none!important}
+.mono{font-family:var(--mono)}
+.text-muted{color:var(--text2)}
+.text-hint{color:var(--text3)}
+.text-right{text-align:right}
+.text-center{text-align:center}
+.flex{display:flex;align-items:center}
+.flex-between{display:flex;align-items:center;justify-content:space-between}
+.gap-4{gap:4px}.gap-8{gap:8px}.gap-12{gap:12px}
+.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}
+.w-full{width:100%}
+
+/* ====== BADGES ====== */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.02em}
+.badge-navy{background:var(--atlas-navy-light);color:var(--atlas-navy)}
+.badge-red{background:var(--atlas-red-light);color:var(--atlas-red)}
+.badge-success{background:var(--success-bg);color:var(--success)}
+.badge-warning{background:var(--warning-bg);color:var(--warning)}
+.badge-danger{background:var(--danger-bg);color:var(--danger)}
+.badge-gray{background:#E8EAF0;color:var(--text2)}
+
+/* ====== LOGIN SCREEN ====== */
+#loginScreen{position:fixed;inset:0;background:var(--atlas-navy);display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:2rem}
+.login-logo{display:flex;align-items:center;gap:14px}
+.login-hexmark{width:56px;height:56px;background:var(--atlas-red);border-radius:14px;display:flex;align-items:center;justify-content:center}
+.login-hexmark svg{width:34px;height:34px}
+.login-brand{color:#fff}
+.login-brand-name{font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1}
+.login-brand-sub{font-size:11px;color:rgba(255,255,255,0.45);font-weight:500;letter-spacing:0.1em;margin-top:2px;display:block}
+.login-card{background:#fff;border-radius:20px;padding:2.5rem 2.25rem;width:420px;box-shadow:0 24px 80px rgba(0,0,0,0.35)}
+.login-heading{font-size:18px;font-weight:700;color:var(--atlas-navy);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:1.75rem}
+.form-field{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block;letter-spacing:0.02em}
+.form-input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:14px;color:var(--text);background:var(--surface2);transition:border-color .2s,box-shadow .2s;outline:none}
+.form-input:focus{border-color:var(--atlas-navy);box-shadow:0 0 0 3px rgba(27,47,91,0.1);background:#fff}
+.btn-login{width:100%;padding:12px;background:var(--atlas-red);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:6px}
+.btn-login:hover{background:#a8181f}
+
+/* ====== TOP BAR ====== */
+.topbar{background:var(--atlas-navy);height:54px;display:flex;align-items:center;padding:0 1.5rem;gap:1rem;position:sticky;top:0;z-index:100}
+.tb-logo{display:flex;align-items:center;gap:9px;text-decoration:none}
+.tb-hexmark{width:30px;height:30px;background:var(--atlas-red);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-hexmark svg{width:18px;height:18px}
+.tb-brand{color:#fff;font-size:14px;font-weight:700;letter-spacing:-0.3px}
+.tb-brand-sub{font-size:10px;color:rgba(255,255,255,0.4);display:block;margin-top:-2px;font-weight:400}
+.tb-nav{display:flex;gap:2px;margin-left:1.25rem}
+.tb-navbtn{padding:6px 13px;border-radius:7px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.55);background:none;border:none;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
+.tb-navbtn:hover{color:#fff;background:rgba(255,255,255,0.08)}
+.tb-navbtn.active{color:#fff;background:rgba(255,255,255,0.14)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.tb-user{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);padding:5px 12px 5px 6px;border-radius:20px}
+.tb-avatar{width:26px;height:26px;border-radius:50%;background:var(--atlas-red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.tb-username{font-size:12px;color:rgba(255,255,255,0.85);font-weight:500}
+.tb-userrole{font-size:10px;color:rgba(255,255,255,0.4)}
+.tb-logout{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.4);font-size:18px;padding:4px;border-radius:5px;line-height:1;font-family:var(--font)}
+.tb-logout:hover{color:#fff;background:rgba(255,255,255,0.1)}
+
+/* ====== LAYOUT ====== */
+.app-body{display:none}
+.app-body.visible{display:block}
+.page{display:none;padding:1.75rem 2rem;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+.page-header{margin-bottom:1.5rem}
+.page-title{font-size:20px;font-weight:700;color:var(--atlas-navy);letter-spacing:-0.3px}
+.page-sub{font-size:13px;color:var(--text3);margin-top:2px}
+
+/* ====== CARDS ====== */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
+.card-title{font-size:13px;font-weight:600;color:var(--atlas-navy);display:flex;align-items:center;gap:7px;margin-bottom:1rem}
+.card-title-icon{width:28px;height:28px;background:var(--atlas-navy-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+
+/* ====== BUTTONS ====== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.btn-primary{background:var(--atlas-navy);color:#fff}
+.btn-primary:hover{background:#142340}
+.btn-red{background:var(--atlas-red);color:#fff}
+.btn-red:hover{background:#a8181f}
+.btn-outline{background:var(--surface);color:var(--atlas-navy);border-color:var(--border2)}
+.btn-outline:hover{background:var(--surface2);border-color:var(--atlas-navy)}
+.btn-ghost{background:none;color:var(--text2);border-color:transparent}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-lg{padding:11px 22px;font-size:14px;font-weight:600}
+.btn-full{width:100%}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#a8181f}
+
+/* ====== FORMS ====== */
+.input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .2s,box-shadow .2s}
+.input:focus{border-color:var(--atlas-navy);box-shadow:0 0 0 3px rgba(27,47,91,0.1);background:#fff}
+.input[readonly]{background:#f0f2f7;color:var(--text3);cursor:default}
+.input-sm{padding:6px 10px;font-size:12px}
+select.input{cursor:pointer}
+.field{margin-bottom:12px}
+.field-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;display:block;letter-spacing:0.03em;text-transform:uppercase}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+
+/* ====== SECTION LABEL ====== */
+.section-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+
+/* ====== METRICS ====== */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.125rem 1.25rem}
+.metric-label{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:6px}
+.metric-value{font-size:26px;font-weight:700;color:var(--atlas-navy);line-height:1}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.metric-bar{height:3px;border-radius:2px;background:var(--border);margin-top:10px;overflow:hidden}
+.metric-fill{height:100%;border-radius:2px}
+
+/* ====== COTIZADOR LAYOUT ====== */
+.quot-layout{display:grid;grid-template-columns:300px 1fr;gap:1.25rem;align-items:start}
+.quot-sidebar{display:flex;flex-direction:column;gap:14px}
+
+/* ====== CHANNEL TABS ====== */
+.channel-tabs{display:grid;gap:3px;background:var(--surface2);padding:3px;border-radius:10px}
+.channel-tab{padding:8px 6px;border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--text3);transition:all .15s;border:none;background:none;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px}
+.channel-tab:hover{background:rgba(0,0,0,0.04);color:var(--text)}
+.channel-tab.active-ch{background:var(--atlas-navy);color:#fff}
+
+/* ====== RESULT PANEL ====== */
+.calc-block{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:12px}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12.5px;color:var(--text2);border-bottom:1px solid var(--border)}
+.calc-row:last-child{border-bottom:none}
+.calc-row.total-row{font-weight:600;color:var(--atlas-navy);font-size:13px;border-top:1px solid var(--border2);margin-top:4px;padding-top:8px;border-bottom:none}
+.calc-val{font-family:var(--mono);font-size:12px;color:var(--text);font-weight:500}
+.price-display{text-align:center;padding:1rem 0}
+.price-label{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:0.06em}
+.price-main{font-size:36px;font-weight:700;color:var(--atlas-navy);letter-spacing:-1px;line-height:1;margin:4px 0}
+.price-note{font-size:11px;color:var(--text3)}
+.psic-badge{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500;margin-top:8px}
+.psic-ok{background:var(--success-bg);color:var(--success);border:1px solid rgba(26,107,58,0.2)}
+.psic-fail{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(200,32,47,0.2)}
+
+/* ====== TABLE ====== */
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{background:var(--atlas-navy);color:#fff;padding:9px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;white-space:nowrap}
+thead th:first-child{border-radius:var(--radius-lg) 0 0 0}
+thead th:last-child{border-radius:0 var(--radius-lg) 0 0}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{padding:8px 12px;vertical-align:middle}
+td.mono-cell{font-family:var(--mono);font-size:11px}
+td.right{text-align:right}
+td.center{text-align:center}
+
+/* ====== UPLOAD ZONE ====== */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--atlas-navy);background:var(--atlas-navy-light)}
+.upload-zone input{display:none}
+.upload-icon{font-size:36px;margin-bottom:8px;display:block}
+.upload-title{font-size:15px;font-weight:600;color:var(--atlas-navy);margin-bottom:4px}
+.upload-sub{font-size:12px;color:var(--text3)}
+
+/* ====== PROGRESS ====== */
+.progress-wrap{margin-top:12px;display:none}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:var(--atlas-navy);transition:width .3s}
+.progress-label{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* ====== ADMIN: CHANNELS ====== */
+.channel-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:1rem}
+.channel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.125rem;transition:border-color .2s}
+.channel-card:hover{border-color:var(--border2)}
+.channel-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.channel-card-name{font-size:15px;font-weight:700;color:var(--atlas-navy)}
+.channel-param{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)}
+.channel-param:last-of-type{border-bottom:none}
+.channel-param-key{color:var(--text2)}
+.channel-param-val{font-family:var(--mono);font-size:11px;color:var(--atlas-navy);font-weight:500}
+.channel-card-actions{display:flex;gap:6px;margin-top:10px}
+.add-channel-card{border:2px dashed var(--border2);background:var(--surface2);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:180px;transition:all .2s}
+.add-channel-card:hover{border-color:var(--atlas-red);background:var(--atlas-red-light)}
+.add-channel-card span{font-size:13px;font-weight:600;color:var(--text3)}
+.add-channel-card:hover span{color:var(--atlas-red)}
+
+/* ====== MODAL ====== */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,18,40,0.55);z-index:500;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-xl);padding:2rem;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.modal-title{font-size:17px;font-weight:700;color:var(--atlas-navy)}
+.modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text3);padding:4px;border-radius:6px;line-height:1}
+.modal-close:hover{color:var(--text);background:var(--surface2)}
+.modal-footer{display:flex;gap:8px;margin-top:1.5rem;justify-content:flex-end}
+
+/* ====== USERS TABLE ====== */
+.user-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.av-admin{background:var(--atlas-navy-light);color:var(--atlas-navy)}
+.av-kam{background:var(--atlas-red-light);color:var(--atlas-red)}
+
+/* ====== ALERTS ====== */
+.alert{padding:10px 14px;border-radius:8px;font-size:12.5px;display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
+.alert-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.alert-info{background:var(--atlas-navy-light);color:var(--atlas-navy);border:1px solid rgba(27,47,91,0.2)}
+.alert-warning{background:var(--warning-bg);color:var(--warning);border:1px solid rgba(138,92,0,0.2)}
+.alert-danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(200,32,47,0.2)}
+.alert-success{background:var(--success-bg);color:var(--success);border:1px solid rgba(26,107,58,0.2)}
+
+/* ====== RESPONSIVE ====== */
+@media(max-width:900px){
+  .quot-layout{grid-template-columns:1fr}
+  .metrics-grid{grid-template-columns:1fr 1fr}
+  .tb-nav{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-logo">
+    <img src="src/Logo.png" alt="Grupo Comercial Atlas" style="height:100px;width:auto">
+  </div>
+
+  <div class="login-card">
+    <div class="login-heading">Bienvenido</div>
+    <div class="login-sub">Ingresa tus credenciales para continuar</div>
+
+    <div class="form-field">
+      <label class="form-label">Correo corporativo</label>
+      <input class="form-input" id="loginEmail" type="email" placeholder="usuario@gcatlas.mx" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="loginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="loginError" style="color:var(--danger);font-size:12px;margin-bottom:10px;display:none"></div>
+    <button class="btn-login" id="btnLogin" onclick="doLogin()">Iniciar sesión</button>
+    <div style="text-align:center;margin-top:14px">
+      <a href="#" onclick="openForgotPassword();return false" style="font-size:12px;color:var(--text3);text-decoration:none">¿Olvidaste tu contraseña?</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FORGOT PASSWORD OVERLAY ===== -->
+<div id="forgotOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:2rem;width:380px;box-shadow:0 24px 80px rgba(0,0,0,0.35)">
+    <div style="font-size:16px;font-weight:700;color:var(--atlas-navy);margin-bottom:6px">Recuperar contraseña</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:1.25rem">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</div>
+    <div class="form-field">
+      <label class="form-label">Correo corporativo</label>
+      <input class="form-input" id="forgotEmail" type="email" placeholder="usuario@gcatlas.mx">
+    </div>
+    <div id="forgotMsg" style="font-size:12px;margin-bottom:10px;display:none"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-ghost" onclick="closeForgotPassword()">Cancelar</button>
+      <button class="btn btn-primary" id="btnForgotSend" onclick="sendPasswordReset()">Enviar enlace</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PASSWORD RESET OVERLAY ===== -->
+<div id="resetOverlay" style="display:none;position:fixed;inset:0;background:var(--atlas-navy);z-index:2000;align-items:center;justify-content:center;flex-direction:column;gap:2rem">
+  <div class="login-logo">
+    <img src="src/Logo.png" alt="Grupo Comercial Atlas" style="height:80px;width:auto">
+  </div>
+  <div style="background:#fff;border-radius:20px;padding:2.5rem 2.25rem;width:420px;box-shadow:0 24px 80px rgba(0,0,0,0.35)">
+    <div style="font-size:18px;font-weight:700;color:var(--atlas-navy);margin-bottom:4px">Nueva contraseña</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:1.75rem">Elige una contraseña segura de al menos 8 caracteres.</div>
+    <div class="form-field">
+      <label class="form-label">Nueva contraseña</label>
+      <input class="form-input" id="resetPass1" type="password" placeholder="••••••••">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Confirmar contraseña</label>
+      <input class="form-input" id="resetPass2" type="password" placeholder="••••••••">
+    </div>
+    <div id="resetMsg" style="font-size:12px;margin-bottom:10px;display:none"></div>
+    <button class="btn-login" onclick="doResetPassword()">Cambiar contraseña</button>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app-body" id="appBody">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="tb-logo">
+      <img src="src/Logo.png" alt="Grupo Comercial Atlas" style="height:44px;width:auto">
+    </div>
+    <nav class="tb-nav" id="mainNav"></nav>
+    <div class="tb-right">
+      <button class="tb-navbtn" onclick="navigateTo('perfil')" id="nav-perfil" title="Mi perfil" style="padding:5px 10px">
+        <div class="tb-avatar" id="tbAvatar" style="width:26px;height:26px;font-size:10px">GA</div>
+        <div style="text-align:left">
+          <div class="tb-username" id="tbUsername">Gerente Admin</div>
+          <div class="tb-userrole" id="tbRole">Administrador</div>
+        </div>
+      </button>
+      <button class="tb-logout" onclick="doLogout()" title="Cerrar sesión">⏻</button>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: DASHBOARD ===== -->
+  <div class="page" id="page-dashboard">
+    <div class="page-header flex-between">
+      <div>
+        <div class="page-title">Panel de administración</div>
+        <div class="page-sub" id="dashDate">Cargando...</div>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-outline btn-sm" onclick="syncSheet()">↻ Sincronizar catálogo</button>
+        <button class="btn btn-outline btn-sm" onclick="descargarCatalogoCostos()">↓ Costos</button>
+        <button class="btn btn-outline btn-sm" onclick="descargarCatalogoEnvios()">↓ Costos envío</button>
+      </div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Cotizaciones hoy</div>
+        <div class="metric-value" id="m-total">0</div>
+        <div class="metric-sub">sesión actual</div>
+        <div class="metric-bar"><div class="metric-fill" style="background:var(--atlas-navy);width:0%" id="mb-total"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Canal Liverpool</div>
+        <div class="metric-value" id="m-liv">0</div>
+        <div class="metric-sub" id="m-liv-pct">—</div>
+        <div class="metric-bar"><div class="metric-fill" style="background:var(--atlas-red)" id="mb-liv"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Otros canales</div>
+        <div class="metric-value" id="m-mkp">0</div>
+        <div class="metric-sub" id="m-mkp-pct">—</div>
+        <div class="metric-bar"><div class="metric-fill" style="background:#1A6B3A" id="mb-mkp"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Pendientes autorización</div>
+        <div class="metric-value" id="m-pdf" style="color:var(--atlas-red)">0</div>
+        <div class="metric-sub">cotizaciones sin autorizar</div>
+        <div class="metric-bar"><div class="metric-fill" style="background:var(--atlas-red)" id="mb-pdf"></div></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-icon">👥</div>Usuarios activos
+        </div>
+        <div id="dashUsers"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-icon">⚡</div>Accesos rápidos
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="dashQuickAccess"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: COTIZADOR ===== -->
+  <div class="page" id="page-cotizador">
+    <div class="page-header">
+      <div class="page-title">Cotizador</div>
+      <div class="page-sub">Individual y masivo · Lee costos en vivo desde Google Sheets</div>
+    </div>
+
+    <!-- Sub tabs -->
+    <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:1.25rem;width:fit-content">
+      <button class="btn btn-primary btn-sm" id="subtab-ind" onclick="showSubtab('individual')">Cotización individual</button>
+      <button class="btn btn-ghost btn-sm" id="subtab-mas" onclick="showSubtab('masivo')">Carga masiva (Excel)</button>
+    </div>
+
+    <!-- INDIVIDUAL -->
+    <div id="view-individual">
+      <div class="quot-layout">
+        <!-- Sidebar -->
+        <div class="quot-sidebar">
+          <div class="card">
+            <div class="section-label">Canal de venta</div>
+            <div class="channel-tabs" id="channelTabsInd" style="grid-template-columns:1fr"></div>
+          </div>
+
+          <div class="card">
+            <div class="section-label">Buscar artículo</div>
+            <div style="display:flex;gap:6px">
+              <input class="input" id="skuSearch" placeholder="SKU Bundle..." onkeydown="if(event.key==='Enter')buscarSKU()">
+              <button class="btn btn-primary btn-sm" onclick="buscarSKU()">Buscar</button>
+            </div>
+            <div id="skuResults" style="margin-top:8px"></div>
+          </div>
+
+          <div class="card" id="paramPanel">
+            <div class="section-label">Parámetros</div>
+            <div class="field">
+              <label class="field-label">Margen campaña %</label>
+              <input class="input" type="number" id="margenInd" value="18" min="1" max="60" step="0.5" oninput="calcularIndividual()">
+            </div>
+            <div id="livParamsInd">
+              <!-- populated dynamically by updateChannelParamUI -->
+            </div>
+          </div>
+
+          <button class="btn btn-red btn-full btn-lg" onclick="calcularIndividual()">⚡ Calcular cotización</button>
+          <button class="btn btn-primary btn-full" id="btnGenerarPDF" onclick="generarPDF()" style="display:none">📄 Generar PDF para Finanzas</button>
+        </div>
+
+        <!-- Main area -->
+        <div>
+          <div id="bundleInfo" class="hidden">
+            <div class="card mb-16">
+              <div class="flex-between mb-12">
+                <div>
+                  <span class="badge badge-navy" id="r-sku">SKU</span>
+                  <div style="font-size:16px;font-weight:700;color:var(--atlas-navy);margin-top:6px" id="r-desc">—</div>
+                  <div style="font-size:12px;color:var(--text3);margin-top:2px" id="r-meta">—</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span class="badge" id="r-canal-badge">—</span>
+                  <button class="btn btn-primary btn-sm" onclick="agregarACarrito()">+ Agregar a cotización</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Componente</th><th>SKU</th><th class="right">Cant.</th><th class="right">Costo s/IVA</th><th class="right">Subtotal</th></tr></thead>
+                  <tbody id="r-componentes"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+              <div class="card">
+                <div class="card-title"><div class="card-title-icon">🧮</div>Desglose de costos</div>
+                <div class="calc-block" style="margin-top:0">
+                  <div class="calc-row"><span>Costo c/IVA (× 1.16)</span><span class="calc-val" id="r-costoIva">—</span></div>
+                  <div class="calc-row"><span id="r-gastoAlm-label">Gasto almacén (3%)</span><span class="calc-val" id="r-gastoAlm">—</span></div>
+                  <div class="calc-row"><span>Gasto maniobra</span><span class="calc-val" id="r-gastoMan">—</span></div>
+                  <div class="calc-row total-row"><span>Costo fijo</span><span class="calc-val" id="r-costoFijo">—</span></div>
+                  <div class="calc-row" style="margin-top:8px"><span id="r-comision-label">Comisión canal</span><span class="calc-val" id="r-comision">—</span></div>
+                  <div class="calc-row"><span>Envío</span><span class="calc-val" id="r-envio">—</span></div>
+                  <div class="calc-row total-row"><span>Total gastos</span><span class="calc-val" id="r-totalGastos">—</span></div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-title"><div class="card-title-icon">📈</div>Resultado</div>
+                <div class="price-display">
+                  <div class="price-label">Precio de venta</div>
+                  <div class="price-main" id="r-precioVenta">—</div>
+                  <div class="price-note">Termina en 9 · Redondeado automáticamente</div>
+                </div>
+                <div class="calc-block" style="margin-top:0">
+                  <div class="calc-row"><span>Precio lleno (factor <span id="r-factor-label">75%</span>)</span><span class="calc-val" id="r-precioLleno">—</span></div>
+                  <div class="calc-row"><span>Precio oferta exacto</span><span class="calc-val" id="r-precioOferta">—</span></div>
+                  <div class="calc-row"><span>Utilidad $</span><span class="calc-val" id="r-utilidad">—</span></div>
+                  <div class="calc-row total-row"><span>Utilidad %</span><span class="calc-val" id="r-utilidadPct">—</span></div>
+                </div>
+                <div id="r-psic-wrap"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="bundleEmpty" class="card" style="text-align:center;padding:3rem">
+            <div style="font-size:40px;margin-bottom:12px">🔍</div>
+            <div style="font-size:15px;font-weight:600;color:var(--atlas-navy);margin-bottom:6px">Busca un SKU Bundle</div>
+            <div style="font-size:13px;color:var(--text3)">Escribe el código del bundle y presiona Buscar. El sistema consultará Google Sheets en vivo para obtener los componentes y costos.</div>
+          </div>
+
+          <!-- Carrito de cotización -->
+          <div id="cotizacionCarrito" style="display:none;margin-top:1.25rem">
+            <div class="card">
+              <div class="flex-between mb-12">
+                <div>
+                  <div style="font-size:14px;font-weight:700;color:var(--atlas-navy)">Cotización en curso</div>
+                  <div style="font-size:12px;color:var(--text3);margin-top:2px" id="carritoSubtitle">0 artículos</div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-ghost btn-sm" onclick="limpiarCarrito()">Limpiar</button>
+                  <button class="btn btn-primary btn-sm" onclick="guardarCotizacionIndividual()">💾 Guardar cotización</button>
+                </div>
+              </div>
+              <div class="table-wrap" style="border:none">
+                <table>
+                  <thead><tr><th>SKU</th><th>Descripción</th><th class="right">Precio venta</th><th class="right">Precio lleno</th><th class="right">Utilidad</th><th>PSIC</th><th></th></tr></thead>
+                  <tbody id="carritoBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MASIVO -->
+    <div id="view-masivo" class="hidden">
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:1.25rem;align-items:start">
+        <div>
+          <div class="card mb-16">
+            <div class="section-label">Canal de venta</div>
+            <div class="channel-tabs" id="channelTabsMas" style="grid-template-columns:1fr"></div>
+          </div>
+          <div class="card">
+            <div class="section-label">Columnas requeridas en Excel</div>
+            <div id="masColsHint" style="font-size:11px;font-family:var(--mono);line-height:2.2;color:var(--text2)"></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:8px" id="masColsDesc"></div>
+            <button class="btn btn-outline btn-sm btn-full" style="margin-top:10px" onclick="descargarPlantilla()">↓ Descargar plantilla</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card mb-16">
+            <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)">
+              <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)">
+              <span class="upload-icon">📂</span>
+              <div class="upload-title">Arrastra tu Excel aquí</div>
+              <div class="upload-sub">o haz clic para seleccionar · .xlsx, .xls, .csv</div>
+            </div>
+            <div class="progress-wrap" id="progressWrap">
+              <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+              <div class="progress-label" id="progressLabel">Procesando...</div>
+            </div>
+          </div>
+
+          <div id="masResults" class="hidden">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem" id="masMetrics"></div>
+            <div class="flex-between mb-12">
+              <div class="flex gap-8">
+                <input class="input input-sm" placeholder="Buscar SKU..." id="masSearch" style="width:200px" oninput="filtrarMasivo()">
+                <select class="input input-sm" id="masFilter" style="width:130px" onchange="filtrarMasivo()">
+                  <option value="all">Todos</option>
+                  <option value="ok">OK</option>
+                  <option value="warn">PSIC inválido</option>
+                  <option value="err">Sin costo</option>
+                </select>
+              </div>
+              <div class="flex gap-8">
+                <button class="btn btn-outline btn-sm" onclick="exportarExcel()">↓ Excel completo</button>
+                <button class="btn btn-red btn-sm" onclick="exportarPDFMasivo()">📄 PDF resumen Finanzas</button>
+                <button class="btn btn-primary btn-sm" onclick="guardarCotizacionMasiva()">💾 Guardar cotización</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>SKU Bundle</th>
+                    <th>Descripción</th>
+                    <th class="right">Costo c/IVA</th>
+                    <th class="right">Envío</th>
+                    <th class="right">Margen %</th>
+                    <th class="right">Precio Lleno</th>
+                    <th class="right">Precio Venta</th>
+                    <th class="right">Utilidad %</th>
+                    <th class="right" id="th-psic-mas">PSIC</th>
+                    <th class="center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="masBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: CANALES (Admin only) ===== -->
+  <div class="page" id="page-canales">
+    <div class="page-header flex-between">
+      <div>
+        <div class="page-title">Canales y comisiones</div>
+        <div class="page-sub">Solo el Administrador puede ver y modificar comisiones</div>
+      </div>
+    </div>
+    <div class="alert alert-warning">
+      <span class="alert-icon">🔒</span>
+      <div>Los parámetros de comisión, factor de precio lleno y costos de envío son <strong>confidenciales</strong>. Los Consultores KAM solo ven el canal, nunca sus parámetros.</div>
+    </div>
+    <div class="channel-cards" id="channelCards"></div>
+  </div>
+
+  <!-- ===== PAGE: USUARIOS (Admin only) ===== -->
+  <div class="page" id="page-usuarios">
+    <div class="page-header flex-between">
+      <div>
+        <div class="page-title">Gestión de usuarios</div>
+        <div class="page-sub">Administra los accesos al cotizador</div>
+      </div>
+      <button class="btn btn-red" onclick="openNewUserModal()">+ Nuevo usuario</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap" style="border:none">
+        <table>
+          <thead><tr><th>Usuario</th><th>Correo</th><th>Puesto</th><th>Perfil</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: HISTORIAL ===== -->
+  <div class="page" id="page-historial">
+    <div class="page-header">
+      <div class="page-title">Historial de cotizaciones</div>
+      <div class="page-sub">Cotizaciones guardadas automáticamente</div>
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:14px 16px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input class="input" id="histBuscar" placeholder="Buscar SKU o descripción..." oninput="renderHistorial()" style="min-width:180px;flex:1">
+        <select class="input" id="histCanal" onchange="renderHistorial()" style="width:160px"><option value="">Todos los canales</option></select>
+        <select class="input" id="histTipo" onchange="renderHistorial()" style="width:165px">
+          <option value="">Individual y Masiva</option>
+          <option value="individual">Individual</option>
+          <option value="masiva">Masiva</option>
+        </select>
+        <select class="input" id="histUsuario" onchange="renderHistorial()" style="width:190px;display:none"><option value="">Todos los usuarios</option></select>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="historialLoading" style="text-align:center;padding:3rem;color:var(--text3)">Cargando...</div>
+      <div id="historialEmpty" style="text-align:center;padding:3rem;color:var(--text3);display:none">Sin cotizaciones registradas.</div>
+      <div class="table-wrap" style="border:none">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>SKU / Descripción</th>
+              <th>Canal</th>
+              <th class="right">Precio venta</th>
+              <th class="right">Precio lleno</th>
+              <th class="right">Utilidad</th>
+              <th id="histColUsuario" style="display:none">Usuario</th>
+              <th>Autorización</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="historialBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: PERFIL ===== -->
+  <div class="page" id="page-perfil">
+    <div class="page-header">
+      <div class="page-title">Mi perfil</div>
+      <div class="page-sub">Administra tu información y contraseña</div>
+    </div>
+    <div style="max-width:520px;display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="section-label" style="margin-bottom:12px">Información personal</div>
+        <div class="field">
+          <label class="field-label">Nombre completo</label>
+          <input class="input" id="prof-nombre" type="text" placeholder="Tu nombre completo">
+        </div>
+        <div class="field">
+          <label class="field-label">Correo corporativo</label>
+          <input class="input" id="prof-email" type="email" placeholder="usuario@gcatlas.mx">
+        </div>
+        <div class="field">
+          <label class="field-label">Puesto</label>
+          <input class="input" id="prof-puesto" disabled style="background:var(--surface2);color:var(--text3)">
+        </div>
+        <div class="field">
+          <label class="field-label">Rol</label>
+          <input class="input" id="prof-rol" disabled style="background:var(--surface2);color:var(--text3)">
+        </div>
+        <div id="profInfoMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="guardarPerfil()">Guardar cambios</button>
+      </div>
+      <div class="card">
+        <div class="section-label" style="margin-bottom:12px">Cambiar contraseña</div>
+        <div class="field">
+          <label class="field-label">Contraseña actual</label>
+          <input class="input" id="prof-passOld" type="password" placeholder="••••••••">
+        </div>
+        <div class="field">
+          <label class="field-label">Nueva contraseña</label>
+          <input class="input" id="prof-passNew" type="password" placeholder="Mínimo 8 caracteres">
+        </div>
+        <div class="field">
+          <label class="field-label">Confirmar nueva contraseña</label>
+          <input class="input" id="prof-passNew2" type="password" placeholder="••••••••">
+        </div>
+        <div id="profPassMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="cambiarContrasena()">Actualizar contraseña</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-body -->
+
+<!-- ===== MODAL: Canal ===== -->
+<div class="modal-overlay" id="modalCanal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalCanalTitle">Configurar canal</div>
+      <button class="modal-close" onclick="closeModal('modalCanal')">✕</button>
+    </div>
+    <div class="field">
+      <label class="field-label">Nombre del canal</label>
+      <input class="input" id="mc-nombre" placeholder="Liverpool, Marketplace, Amazon...">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Comisión %</label>
+        <input class="input" type="number" id="mc-comision" step="0.5" min="0" max="60">
+      </div>
+      <div class="field">
+        <label class="field-label">Factor precio lleno %</label>
+        <input class="input" type="number" id="mc-factor" step="0.5" min="0" max="99" placeholder="75">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Tipo de envío</label>
+      <select class="input" id="mc-tipoEnvio" onchange="toggleEnvioFields()">
+        <option value="guias">Por guías (Liverpool)</option>
+        <option value="fijo">Monto fijo</option>
+        <option value="tabla">Tabla por categoría</option>
+      </select>
+    </div>
+    <div id="mc-guias-fields">
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Envío 1 guía $</label>
+          <input class="input" type="number" id="mc-envio1" value="1738">
+        </div>
+        <div class="field">
+          <label class="field-label">Envío 2 guías $</label>
+          <input class="input" type="number" id="mc-envio2" value="3476">
+        </div>
+      </div>
+    </div>
+    <div id="mc-fijo-fields" class="hidden">
+      <div class="field">
+        <label class="field-label">Costo envío fijo $</label>
+        <input class="input" type="number" id="mc-envioFijo" value="900">
+      </div>
+    </div>
+    <div class="field-row-3">
+      <div class="field" style="grid-column:span 2">
+        <label class="field-label">Base gasto almacén</label>
+        <select class="input" id="mc-baseGA">
+          <option value="colchon">Colchón principal</option>
+          <option value="total">Costo c/IVA</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">% Almacén</label>
+        <input class="input" type="number" id="mc-gaRate" value="3" min="0" max="20" step="0.1">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Umbral PSIC mínimo</label>
+      <input class="input" type="number" id="mc-psic" value="-0.75" step="0.01">
+    </div>
+    <div class="field">
+      <label class="field-label">Gasto maniobra $</label>
+      <input class="input" type="number" id="mc-maniobra" value="116">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalCanal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCanal()">Guardar canal</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo usuario -->
+<div class="modal-overlay" id="modalNewUser">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo usuario</div>
+      <button class="modal-close" onclick="closeModal('modalNewUser')">✕</button>
+    </div>
+    <div class="field">
+      <label class="field-label">Nombre completo</label>
+      <input class="input" id="nu-nombre" placeholder="Nombre Apellido">
+    </div>
+    <div class="field">
+      <label class="field-label">Correo corporativo</label>
+      <input class="input" id="nu-email" type="email" placeholder="usuario@gcatlas.mx">
+    </div>
+    <div class="field">
+      <label class="field-label">Perfil</label>
+      <select class="input" id="nu-rol">
+        <option value="admin">Administrador</option>
+        <option value="kam" selected>Consultor KAM</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label">Puesto (para firma en PDF)</label>
+      <select class="input" id="nu-puesto">
+        <option value="">— Sin puesto especial —</option>
+        <option value="Director de Finanzas">Director de Finanzas</option>
+        <option value="Director Comercial">Director Comercial</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label">Contraseña temporal</label>
+      <input class="input" id="nu-pass" type="password" placeholder="Mínimo 8 caracteres">
+    </div>
+    <div id="nuMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalNewUser')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarUsuario()">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Editar usuario -->
+<div class="modal-overlay" id="modalEditUser">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Editar usuario</div>
+      <button class="modal-close" onclick="closeModal('modalEditUser')">✕</button>
+    </div>
+    <input type="hidden" id="eu-id">
+    <div class="field">
+      <label class="field-label">Nombre completo</label>
+      <input class="input" id="eu-nombre" placeholder="Nombre Apellido">
+    </div>
+    <div class="field">
+      <label class="field-label">Correo corporativo</label>
+      <input class="input" id="eu-email" type="email" placeholder="usuario@gcatlas.mx">
+    </div>
+    <div class="field">
+      <label class="field-label">Perfil</label>
+      <select class="input" id="eu-rol">
+        <option value="admin">Administrador</option>
+        <option value="kam">Consultor KAM</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label">Puesto (para firma en PDF)</label>
+      <select class="input" id="eu-puesto">
+        <option value="">— Sin puesto especial —</option>
+        <option value="Director de Finanzas">Director de Finanzas</option>
+        <option value="Director Comercial">Director Comercial</option>
+      </select>
+    </div>
+    <div id="euMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalEditUser')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionUsuario()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Restablecer contraseña (admin) -->
+<div class="modal-overlay" id="modalResetUser">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">Restablecer contraseña</div>
+      <button class="modal-close" onclick="closeModal('modalResetUser')">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">
+      Establece una nueva contraseña temporal para <strong id="resetUserName"></strong>.
+    </div>
+    <input type="hidden" id="ru-id">
+    <div class="field">
+      <label class="field-label">Nueva contraseña</label>
+      <input class="input" id="ru-pass" type="password" placeholder="Mínimo 8 caracteres">
+    </div>
+    <div id="ruMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalResetUser')">Cancelar</button>
+      <button class="btn btn-primary" onclick="adminResetPassword()">Cambiar contraseña</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =============================================
+   ESTADO GLOBAL
+============================================= */
+const SHEET_ID = '1Fd-YUZwUtftJt6nzM5PX1IydKpcxGZLz0qZ6nH9WmOQ';
+const GASTO_MANIOBRA = 116;
+const COSTO_BOLSA = { individual: 60.18, matrimonial: 65.49, queen: 74.34, king: 94.40 };
+
+function detectarTamano(componentes) {
+  const texto = componentes.map(c => c.descripcion || '').join(' ').toUpperCase();
+  if (/\bKING(\s*SIZE)?\b|\bKS\b/.test(texto)) return 'king';
+  if (/\bQUEEN(\s*SIZE)?\b|\bQS\b/.test(texto)) return 'queen';
+  if (/\bMATRIMONIAL\b|\bMATRI\b/.test(texto)) return 'matrimonial';
+  if (/\bINDIVIDUAL\b|\bINDI\b|\bTWIN\b/.test(texto)) return 'individual';
+  return null;
+}
+
+let currentUser = null;
+let currentChannel = null;
+let editingChannelId = null;
+let sheetData = [];
+let bundleMap = {};
+let envioData = [];
+let envioMap  = {};
+let masivoResultados = [];
+let _envioTablaItems = [''];
+let masivoFiltered = [];
+let sessionStats = { total:0, liverpool:0, otros:0, pdfs:0 };
+
+// USUARIOS — persistidos en Firestore
+let usuarios = [];
+
+/* =============================================
+   FIREBASE / FIRESTORE
+============================================= */
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyDOrmNcjoBPJHiT6rG_ZPGHwaBiyklH54U",
+    authDomain: "cotizadoratlas.firebaseapp.com",
+    projectId: "cotizadoratlas",
+    storageBucket: "cotizadoratlas.firebasestorage.app",
+    messagingSenderId: "1040991453211",
+    appId: "1:1040991453211:web:e53a8c0cce5e7c5ce7f8be"
+  });
+}
+const _db = firebase.firestore();
+const _COLL = 'usuarios';
+
+/* =============================================
+   CRYPTO — PBKDF2 con Web Crypto API
+============================================= */
+function hexToBytes(hex) {
+  const arr = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2)
+    arr[i / 2] = parseInt(hex.substr(i, 2), 16);
+  return arr;
+}
+function bytesToHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function randHex(bytes) {
+  return bytesToHex(crypto.getRandomValues(new Uint8Array(bytes)));
+}
+async function hashPassword(password, saltHex) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits({
+    name: 'PBKDF2',
+    salt: enc.encode(saltHex),
+    iterations: 100000,
+    hash: 'SHA-256'
+  }, keyMaterial, 256);
+  return bytesToHex(new Uint8Array(bits));
+}
+async function verifyPassword(password, saltHex, storedHash) {
+  const hash = await hashPassword(password, saltHex);
+  return hash === storedHash;
+}
+
+/* =============================================
+   COTIZACIONES (Firestore)
+============================================= */
+
+// --- Carrito de cotización individual ---
+let _cotizacionItems = [];
+
+function agregarACarrito() {
+  const r = window._lastQuot;
+  if (!r) return;
+  const margen = parseFloat(document.getElementById('margenInd').value) || 18;
+  _cotizacionItems.push({
+    sku: r.sku,
+    descripcion: r.componentes[0]?.descripcion || r.sku,
+    margen,
+    precioVenta: r.precioVenta,
+    precioLleno: r.precioLleno,
+    precioOferta: r.precioOferta,
+    costoIva: r.costoIva,
+    utilidad: r.utilidad,
+    utilidadPct: r.utilidadPct,
+    psicOk: r.psicOk,
+    envio: r.envio,
+    estado: r.psicOk ? 'ok' : 'warn'
+  });
+  renderCarrito();
+}
+
+function quitarDeCarrito(idx) {
+  _cotizacionItems.splice(idx, 1);
+  renderCarrito();
+}
+
+function renderCarrito() {
+  const wrap = document.getElementById('cotizacionCarrito');
+  const body = document.getElementById('carritoBody');
+  const sub  = document.getElementById('carritoSubtitle');
+  if (!_cotizacionItems.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  sub.textContent = `${_cotizacionItems.length} artículo${_cotizacionItems.length > 1 ? 's' : ''}`;
+  body.innerHTML = _cotizacionItems.map((it, i) => `
+    <tr>
+      <td style="font-weight:600;font-size:13px">${it.sku}</td>
+      <td style="font-size:12px;color:var(--text2)">${it.descripcion}</td>
+      <td class="right">${fmt(it.precioVenta)}</td>
+      <td class="right">${fmt(it.precioLleno)}</td>
+      <td class="right">${fmtPct(it.utilidadPct)}</td>
+      <td><span class="badge ${it.psicOk ? 'badge-success' : 'badge-warning'}">${it.psicOk ? '✓' : '✗'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="quitarDeCarrito(${i})" style="color:var(--danger);padding:2px 6px">✕</button></td>
+    </tr>`).join('');
+}
+
+function limpiarCarrito() {
+  _cotizacionItems = [];
+  renderCarrito();
+}
+
+async function guardarCotizacionIndividual() {
+  if (!_cotizacionItems.length) { alert('Agrega al menos un SKU a la cotización.'); return; }
+  const first = _cotizacionItems[0];
+  const data = {
+    id: 'c' + Date.now(),
+    userId: currentUser.id,
+    userName: currentUser.nombre,
+    userEmail: currentUser.email,
+    tipo: 'individual',
+    fecha: new Date().toISOString(),
+    canal: currentChannel.nombre,
+    canalId: currentChannel.id,
+    items: [..._cotizacionItems],
+    totalSkus: _cotizacionItems.length,
+    exitosos: _cotizacionItems.filter(i => i.estado !== 'err').length,
+    errores: 0,
+    autorizada: false,
+    // campos de resumen para mostrar en historial
+    sku: _cotizacionItems.length === 1 ? first.sku : `${_cotizacionItems.length} SKUs`,
+    descripcion: _cotizacionItems.length === 1 ? first.descripcion : _cotizacionItems.map(i => i.sku).join(', '),
+    precioVenta: first.precioVenta,
+    precioLleno: first.precioLleno,
+    utilidadPct: first.utilidadPct
+  };
+  await guardarCotizacion(data);
+  limpiarCarrito();
+  alert('Cotización guardada correctamente.');
+}
+
+async function guardarCotizacionMasiva() {
+  if (!masivoResultados.length) { alert('Primero procesa un archivo Excel.'); return; }
+  const items = masivoResultados.map(r => ({
+    sku: r.sku || '',
+    descripcion: r.componentes?.[0]?.descripcion || r.descripcion || '',
+    margen: r.margen || 18,
+    precioVenta: r.precioVenta || 0,
+    precioLleno: r.precioLleno || 0,
+    precioOferta: r.precioOferta || 0,
+    costoIva: r.costoIva || 0,
+    utilidad: r.utilidad || 0,
+    utilidadPct: r.utilidadPct || 0,
+    psicOk: r.psicOk || false,
+    envio: r.envio || 0,
+    estado: r.estado || 'err'
+  }));
+  const data = {
+    id: 'cm' + Date.now(),
+    userId: currentUser.id,
+    userName: currentUser.nombre,
+    userEmail: currentUser.email,
+    tipo: 'masiva',
+    fecha: new Date().toISOString(),
+    canal: currentChannel.nombre,
+    canalId: currentChannel.id,
+    items,
+    totalSkus: items.length,
+    exitosos: items.filter(i => i.estado !== 'err').length,
+    errores: items.filter(i => i.estado === 'err').length,
+    autorizada: false
+  };
+  await guardarCotizacion(data);
+  alert('Cotización masiva guardada correctamente.');
+}
+
+// --- Ver / autorizar cotización ---
+let _cotizacionAbierta = null;
+
+function abrirCotizacion(id) {
+  const c = _historialData.find(x => x.id === id);
+  if (!c) return;
+  _cotizacionAbierta = c;
+
+  const fecha = new Date(c.fecha).toLocaleString('es-MX', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('cmTitulo').textContent = `Cotización ${c.tipo === 'individual' ? 'Individual' : 'Masiva'} — ${c.canal}`;
+  document.getElementById('cmMeta').textContent = `${fecha} · ${c.userName || c.userEmail} · ${c.totalSkus} SKUs`;
+
+  const items = c.items || [];
+  document.getElementById('cmItems').innerHTML = items.map(it => `
+    <tr>
+      <td style="font-weight:600;font-size:13px">${it.sku}</td>
+      <td style="font-size:12px;color:var(--text2)">${it.descripcion || ''}</td>
+      <td class="right">${it.precioVenta ? fmt(it.precioVenta) : '—'}</td>
+      <td class="right">${it.precioLleno ? fmt(it.precioLleno) : '—'}</td>
+      <td class="right">${it.utilidadPct != null ? fmtPct(it.utilidadPct) : '—'}</td>
+      <td><span class="badge ${it.psicOk ? 'badge-success' : 'badge-warning'}">${it.psicOk ? '✓' : '✗'}</span></td>
+      <td><span class="badge ${it.estado === 'ok' ? 'badge-success' : it.estado === 'warn' ? 'badge-warning' : 'badge-danger'}">${it.estado || '—'}</span></td>
+    </tr>`).join('');
+
+  const chk = document.getElementById('cmAutorizada');
+  chk.checked = !!c.autorizada;
+  document.getElementById('cmAutorizadaLabel').textContent = c.autorizada ? 'Autorizada ✓' : 'Sin autorizar';
+
+  document.getElementById('cotizacionModal').style.display = 'flex';
+}
+
+function cerrarCotizacionModal() {
+  document.getElementById('cotizacionModal').style.display = 'none';
+  _cotizacionAbierta = null;
+}
+
+async function toggleAutorizacion() {
+  if (!_cotizacionAbierta) return;
+  const autorizada = document.getElementById('cmAutorizada').checked;
+  document.getElementById('cmAutorizadaLabel').textContent = autorizada ? 'Autorizada ✓' : 'Sin autorizar';
+  _cotizacionAbierta.autorizada = autorizada;
+  // Actualizar en _historialData
+  const idx = _historialData.findIndex(x => x.id === _cotizacionAbierta.id);
+  if (idx >= 0) _historialData[idx].autorizada = autorizada;
+  // Persistir en Firestore
+  try {
+    await _db.collection('cotizaciones').doc(_cotizacionAbierta.id).update({ autorizada });
+  } catch(e) { console.error('Error actualizando autorización:', e); }
+  renderHistorial();
+}
+
+async function guardarCotizacion(data) {
+  try {
+    await _db.collection('cotizaciones').doc(data.id).set(data);
+  } catch(e) { console.error('Error guardando cotización:', e); }
+}
+
+let _historialData = [];
+
+async function loadHistorial() {
+  document.getElementById('historialLoading').style.display = 'block';
+  document.getElementById('historialEmpty').style.display = 'none';
+  document.getElementById('historialBody').innerHTML = '';
+  try {
+    const snap = await _db.collection('cotizaciones').orderBy('fecha', 'desc').limit(500).get();
+    _historialData = snap.docs.map(d => d.data());
+    if (currentUser.rol !== 'admin') {
+      _historialData = _historialData.filter(c => c.userId === currentUser.id);
+    }
+  } catch(e) {
+    console.error('Error cargando historial:', e);
+    _historialData = [];
+  }
+  document.getElementById('historialLoading').style.display = 'none';
+  initHistorialFiltros();
+  renderHistorial();
+}
+
+function initHistorialFiltros() {
+  const canalesUnicos = [...new Set(_historialData.map(c => c.canal).filter(Boolean))].sort();
+  document.getElementById('histCanal').innerHTML =
+    '<option value="">Todos los canales</option>' +
+    canalesUnicos.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  const usuarioSel = document.getElementById('histUsuario');
+  const colUsuario = document.getElementById('histColUsuario');
+  if (currentUser.rol === 'admin') {
+    const uids = [...new Set(_historialData.map(c => c.userId).filter(Boolean))];
+    usuarioSel.innerHTML = '<option value="">Todos los usuarios</option>' +
+      uids.map(uid => {
+        const c = _historialData.find(x => x.userId === uid);
+        return `<option value="${uid}">${c?.userName || c?.userEmail || uid}</option>`;
+      }).join('');
+    usuarioSel.style.display = 'block';
+    colUsuario.style.display = '';
+  } else {
+    usuarioSel.style.display = 'none';
+    colUsuario.style.display = 'none';
+  }
+}
+
+function renderHistorial() {
+  const buscar  = document.getElementById('histBuscar').value.trim().toLowerCase();
+  const canal   = document.getElementById('histCanal').value;
+  const tipo    = document.getElementById('histTipo').value;
+  const userId  = currentUser.rol === 'admin' ? document.getElementById('histUsuario').value : '';
+
+  let data = _historialData;
+  if (buscar)  data = data.filter(c => (c.sku||'').toLowerCase().includes(buscar) || (c.descripcion||'').toLowerCase().includes(buscar));
+  if (canal)   data = data.filter(c => c.canal === canal);
+  if (tipo)    data = data.filter(c => c.tipo === tipo);
+  if (userId)  data = data.filter(c => c.userId === userId);
+
+  const body  = document.getElementById('historialBody');
+  const empty = document.getElementById('historialEmpty');
+
+  if (!data.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = data.map(c => {
+    const fecha = new Date(c.fecha).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const tipoBadge = c.tipo === 'individual'
+      ? '<span class="badge badge-success">Individual</span>'
+      : '<span class="badge badge-warning">Masiva</span>';
+    const skuCell = c.tipo === 'individual'
+      ? `<div style="font-weight:600;font-size:13px">${c.sku||c.items?.[0]?.sku||'—'}</div><div style="font-size:11px;color:var(--text3)">${c.descripcion||c.items?.[0]?.descripcion||''}</div>`
+      : `<div style="font-weight:600;font-size:13px">${c.totalSkus} SKUs procesados</div><div style="font-size:11px;color:var(--text3)">${c.exitosos} exitosos · ${c.errores} errores</div>`;
+    // precioVenta puede estar en el nivel raíz (nuevos) o en items[0] (anteriores)
+    const pv = c.precioVenta ?? c.items?.[0]?.precioVenta;
+    const pl = c.precioLleno ?? c.items?.[0]?.precioLleno;
+    const up = c.utilidadPct ?? c.items?.[0]?.utilidadPct;
+    const precios = c.tipo === 'individual'
+      ? `<td class="right">${pv!=null?fmt(pv):'—'}</td><td class="right">${pl!=null?fmt(pl):'—'}</td><td class="right">${up!=null?fmtPct(up):'—'}</td>`
+      : '<td class="right">—</td><td class="right">—</td><td class="right">—</td>';
+    const usuarioCell = currentUser.rol === 'admin'
+      ? `<td style="font-size:12px">${c.userName||c.userEmail||''}</td>` : '';
+    const autBadge = c.autorizada
+      ? '<span class="badge badge-success" style="font-size:10px">Autorizada</span>'
+      : '<span class="badge badge-warning" style="font-size:10px">Pendiente</span>';
+    const btnEliminar = currentUser.rol === 'admin'
+      ? `<button class="btn btn-ghost btn-sm" onclick="eliminarCotizacion('${c.id}')" style="color:var(--danger)">Eliminar</button>`
+      : '';
+    return `<tr>
+      <td style="font-size:12px;color:var(--text2);white-space:nowrap">${fecha}</td>
+      <td>${tipoBadge}</td>
+      <td>${skuCell}</td>
+      <td style="font-size:12px">${c.canal||''}</td>
+      ${precios}
+      ${usuarioCell}
+      <td>${autBadge}</td>
+      <td style="display:flex;gap:4px;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="abrirCotizacion('${c.id}')">Abrir</button>
+        ${btnEliminar}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function eliminarCotizacion(id) {
+  if (currentUser.rol !== 'admin') return;
+  if (!confirm('¿Eliminar esta cotización del historial? Esta acción no se puede deshacer.')) return;
+  try {
+    await _db.collection('cotizaciones').doc(id).delete();
+    _historialData = _historialData.filter(c => c.id !== id);
+    renderHistorial();
+  } catch(e) {
+    console.error('Error eliminando cotización:', e);
+    alert('No se pudo eliminar la cotización.');
+  }
+}
+
+/* =============================================
+   PERSISTENCIA DE USUARIOS (Firestore)
+============================================= */
+function saveUsuarios() {
+  if (!usuarios.length) return;
+  (async () => {
+    try {
+      const batch = _db.batch();
+      for (const u of usuarios) {
+        batch.set(_db.collection(_COLL).doc(u.id), u);
+      }
+      await batch.commit();
+    } catch(e) { console.error('Firestore saveUsuarios:', e); }
+  })();
+}
+
+async function loadUsuarios() {
+  // 1. Intentar Firestore
+  try {
+    const snap = await _db.collection(_COLL).get();
+    if (!snap.empty) {
+      usuarios = snap.docs.map(d => d.data());
+      return;
+    }
+  } catch(e) { console.warn('Firestore no disponible:', e); }
+
+  // 2. Firestore vacío: migrar desde localStorage si hay datos previos
+  const raw = localStorage.getItem('atlas_cotizador_users');
+  if (raw) {
+    try {
+      usuarios = JSON.parse(raw);
+      saveUsuarios();
+      localStorage.removeItem('atlas_cotizador_users');
+      return;
+    } catch(e) { /* continuar */ }
+  }
+
+  // 3. Migrar desde users.json
+  try {
+    const res = await fetch(`users.json?_=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('no users.json');
+    const data = await res.json();
+    usuarios = (data.users || []).map(u => ({
+      id: u.id,
+      email: u.email,
+      nombre: u.nombre,
+      rol: u.rol,
+      puesto: u.puesto || null,
+      salt: u.salt,
+      hash: u.hash,
+      activo: u.activo !== false,
+      creadoEn: u.creadoEn || new Date().toISOString()
+    }));
+    saveUsuarios();
+  } catch(e) {
+    console.warn('No se pudo cargar users.json:', e);
+    usuarios = [];
+  }
+}
+
+/* =============================================
+   RESET TOKENS (en localStorage)
+============================================= */
+const LS_TOKENS = 'atlas_reset_tokens';
+
+function getResetTokens() {
+  try { return JSON.parse(localStorage.getItem(LS_TOKENS) || '{}'); } catch { return {}; }
+}
+function saveResetToken(email, token) {
+  const tokens = getResetTokens();
+  tokens[email] = { token, expiry: Date.now() + 3600000 }; // 1 hora
+  localStorage.setItem(LS_TOKENS, JSON.stringify(tokens));
+}
+function consumeResetToken(email, token) {
+  const tokens = getResetTokens();
+  const entry = tokens[email];
+  if (!entry) return false;
+  if (Date.now() > entry.expiry) { delete tokens[email]; localStorage.setItem(LS_TOKENS, JSON.stringify(tokens)); return false; }
+  if (entry.token !== token) return false;
+  delete tokens[email];
+  localStorage.setItem(LS_TOKENS, JSON.stringify(tokens));
+  return true;
+}
+
+// CANALES (configurables por Admin)
+let canales = [
+  {
+    id:'liverpool', nombre:'Liverpool', activo:true,
+    comision:23, factorPL:75, psicMin:-0.75,
+    tipoEnvio:'guias', envio1:1738, envio2:3476,
+    baseGA:'colchon', gaRate:3, maniobra:116
+  },
+  {
+    id:'marketplace', nombre:'Marketplace', activo:true,
+    comision:18, factorPL:75, psicMin:-0.76,
+    tipoEnvio:'tabla', envioFijo:900,
+    baseGA:'total', gaRate:3, maniobra:116
+  }
+];
+
+/* =============================================
+   UTILIDADES
+============================================= */
+const fmt = n => {
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return '$' + Number(n).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+};
+const fmtPct = n => {
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return (n*100).toFixed(2)+'%';
+};
+const initials = name => name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+
+function redondMult(valor, multiplo) {
+  return Math.round(valor / multiplo) * multiplo;
+}
+
+/* =============================================
+   LOGIN
+============================================= */
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('loginPass').value;
+  const btn   = document.getElementById('btnLogin');
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+
+  if (!email || !pass) { showLoginError('Ingresa tu correo y contraseña.'); return; }
+
+  const user = usuarios.find(u => u.email.toLowerCase() === email);
+  if (!user || !user.activo) { showLoginError('Credenciales incorrectas.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  try {
+    const ok = await verifyPassword(pass, user.salt, user.hash);
+    if (!ok) { showLoginError('Credenciales incorrectas.'); return; }
+    currentUser = user;
+    sessionStorage.setItem('atlas_uid', user.id);
+    document.getElementById('loginScreen').style.display = 'none';
+    initApp();
+  } finally {
+    btn.disabled = false; btn.textContent = 'Iniciar sesión';
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+/* =============================================
+   FORGOT PASSWORD
+============================================= */
+function openForgotPassword() {
+  document.getElementById('forgotEmail').value = '';
+  document.getElementById('forgotMsg').style.display = 'none';
+  const ov = document.getElementById('forgotOverlay');
+  ov.style.display = 'flex';
+}
+function closeForgotPassword() {
+  document.getElementById('forgotOverlay').style.display = 'none';
+}
+
+async function sendPasswordReset() {
+  const email  = document.getElementById('forgotEmail').value.trim().toLowerCase();
+  const msgEl  = document.getElementById('forgotMsg');
+  const btn    = document.getElementById('btnForgotSend');
+
+  msgEl.style.display = 'none';
+
+  if (!email) {
+    msgEl.textContent = 'Ingresa tu correo corporativo.';
+    msgEl.style.color = 'var(--danger)';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  // 1. Validar que el correo existe en la base
+  const user = usuarios.find(u => u.email.toLowerCase() === email && u.activo);
+  if (!user) {
+    msgEl.textContent = 'No existe una cuenta activa con ese correo.';
+    msgEl.style.color = 'var(--danger)';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  // 2. Generar token y enlace
+  const token    = randHex(16);
+  saveResetToken(email, token);
+  const resetUrl = `${location.href.split('#')[0]}#reset=${btoa(email)}:${token}`;
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    if (typeof emailjs !== 'undefined' && EMAILJS_SERVICE_ID) {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email,
+        to_name: user.nombre,
+        reset_link: resetUrl,
+        from_name: 'Cotizador GC Atlas'
+      });
+      msgEl.textContent = `Correo enviado a ${email}. Revisa tu bandeja de entrada.`;
+      msgEl.style.color = 'var(--success)';
+    } else {
+      const subject = encodeURIComponent('Recuperación de contraseña — Cotizador Atlas');
+      const body    = encodeURIComponent(`Hola ${user.nombre},\n\nHaz clic en el siguiente enlace para restablecer tu contraseña:\n${resetUrl}\n\nEste enlace expira en 1 hora.\n\nSi no solicitaste esto, ignora este mensaje.`);
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+      msgEl.textContent = 'Se abrió tu cliente de correo. Envía el mensaje para continuar.';
+      msgEl.style.color = 'var(--success)';
+    }
+  } catch(e) {
+    console.error('EmailJS error:', e);
+    msgEl.textContent = 'Error al enviar el correo. Intenta de nuevo.';
+    msgEl.style.color = 'var(--danger)';
+  } finally {
+    msgEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Enviar enlace';
+  }
+}
+
+/* =============================================
+   PASSWORD RESET (desde enlace en email)
+============================================= */
+let _resetEmail = null;
+let _resetToken = null;
+
+function checkResetHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#reset=')) return;
+  const parts = hash.slice(7).split(':');
+  if (parts.length < 2) return;
+  try {
+    _resetEmail = atob(parts[0]);
+    _resetToken = parts[1];
+    // Ocultar login y mostrar overlay de reset
+    document.getElementById('loginScreen').style.display = 'none';
+    const ov = document.getElementById('resetOverlay');
+    ov.style.display = 'flex';
+  } catch(e) {}
+}
+
+async function doResetPassword() {
+  const p1 = document.getElementById('resetPass1').value;
+  const p2 = document.getElementById('resetPass2').value;
+  const msgEl = document.getElementById('resetMsg');
+  if (p1.length < 8) { msgEl.textContent = 'La contraseña debe tener al menos 8 caracteres.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  if (p1 !== p2) { msgEl.textContent = 'Las contraseñas no coinciden.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+
+  const valid = consumeResetToken(_resetEmail, _resetToken);
+  if (!valid) { msgEl.textContent = 'El enlace ha expirado o ya fue usado. Solicita uno nuevo.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+
+  const user = usuarios.find(u => u.email.toLowerCase() === _resetEmail.toLowerCase());
+  if (!user) { msgEl.textContent = 'Usuario no encontrado.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+
+  const salt = randHex(16);
+  const hash = await hashPassword(p1, salt);
+  user.salt = salt; user.hash = hash;
+  saveUsuarios();
+
+  location.hash = '';
+  document.getElementById('resetOverlay').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  msgEl.textContent = 'Contraseña actualizada. Ya puedes iniciar sesión.';
+  msgEl.style.color = 'var(--success)'; msgEl.style.display = 'block';
+}
+
+function doLogout() {
+  currentUser = null;
+  sessionStorage.removeItem('atlas_uid');
+  sessionStats = {total:0,liverpool:0,otros:0,pdfs:0};
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appBody').classList.remove('visible');
+}
+
+/* =============================================
+   APP INIT
+============================================= */
+function initApp() {
+  const app = document.getElementById('appBody');
+  app.classList.add('visible');
+
+  const av = document.getElementById('tbAvatar');
+  av.textContent = initials(currentUser.nombre);
+  av.style.background = currentUser.rol==='admin'?'var(--atlas-red)':'#2D7D3A';
+  document.getElementById('tbUsername').textContent = currentUser.nombre;
+  document.getElementById('tbRole').textContent = currentUser.rol==='admin'?'Administrador':'Consultor KAM';
+
+  buildNav();
+  buildChannelTabs();
+  renderChannelCards();
+  renderUsers();
+  updateDashboard();
+
+  const now = new Date();
+  document.getElementById('dashDate').textContent =
+    now.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  navigateTo(currentUser.rol==='admin' ? 'dashboard' : 'cotizador');
+  loadSheetData();
+}
+
+function buildNav() {
+  const nav = document.getElementById('mainNav');
+  const pages = [
+    {id:'dashboard', label:'Dashboard', icon:'📊', roles:['admin']},
+    {id:'cotizador', label:'Cotizador', icon:'⚡', roles:['admin','kam']},
+    {id:'historial', label:'Historial', icon:'📋', roles:['admin','kam']},
+    {id:'canales', label:'Canales', icon:'🏪', roles:['admin']},
+    {id:'usuarios', label:'Usuarios', icon:'👥', roles:['admin']},
+  ];
+  nav.innerHTML = '';
+  pages.filter(p=>p.roles.includes(currentUser.rol)).forEach(p=>{
+    const b = document.createElement('button');
+    b.className = 'tb-navbtn';
+    b.id = 'nav-'+p.id;
+    b.innerHTML = `${p.icon} ${p.label}`;
+    b.onclick = () => navigateTo(p.id);
+    nav.appendChild(b);
+  });
+}
+
+function navigateTo(pageId) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb-navbtn').forEach(b=>b.classList.remove('active'));
+  const page = document.getElementById('page-'+pageId);
+  if(page) page.classList.add('active');
+  const btn = document.getElementById('nav-'+pageId);
+  if(btn) btn.classList.add('active');
+  if(pageId==='cotizador' && currentUser.rol==='kam') showSubtab('individual');
+  if(pageId==='perfil') loadPerfil();
+  if(pageId==='historial') loadHistorial();
+  sessionStorage.setItem('atlas_page', pageId);
+}
+
+/* =============================================
+   EMAILJS CONFIG (rellenar cuando el usuario configure la cuenta)
+============================================= */
+const EMAILJS_SERVICE_ID  = 'service_msz3ajw';
+const EMAILJS_TEMPLATE_ID = 'template_abs07iy';
+const EMAILJS_PUBLIC_KEY  = 'PjT52wA-rrrMY0rY0';
+
+/* =============================================
+   GOOGLE SHEETS — lectura en vivo
+============================================= */
+async function loadSheetData() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1&_=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    sheetData = parseCSV(text);
+    buildBundleMap();
+    console.log(`✅ Catálogo cargado: ${Object.keys(bundleMap).length} bundles únicos`);
+  } catch(e) {
+    console.warn('Sheet no disponible, usando modo demo:', e);
+    loadDemoData();
+  }
+  await loadEnvioData();
+}
+
+async function loadEnvioData() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Costoenvios&_=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const lines = text.split('\n').filter(l=>l.trim());
+    envioData = [];
+    for(let i=1; i<lines.length; i++){
+      const cols = parseCSVLine(lines[i]);
+      if(cols[0]) envioData.push({ tipo: cols[0].trim(), costo: parseCosto(cols[1]) });
+    }
+    envioMap = {};
+    envioData.forEach(r => { envioMap[r.tipo.toUpperCase()] = r.costo; });
+    console.log(`✅ Costos de envío cargados: ${envioData.length} tipos`);
+    populateEnvioDropdowns();
+  } catch(e) {
+    console.warn('Costoenvios no disponible:', e);
+  }
+}
+
+function populateEnvioDropdowns() {
+  // Refrescar la lista dinámica del cotizador individual (tabla)
+  renderEnvioTablaItems();
+}
+
+
+function parseCSVLine(line) {
+  const cols = [];
+  let cur = '', inQ = false;
+  for(let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if(ch === '"') {
+      if(inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if(ch === ',' && !inQ) {
+      cols.push(cur.trim()); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+function parseCosto(raw) {
+  if(raw === undefined || raw === null) return 0;
+  // Elimina símbolo $, espacios y comas de miles; acepta punto decimal
+  const cleaned = String(raw).replace(/[$\s]/g, '').replace(/,(?=\d{3}(\.|$))/g, '');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l=>l.trim());
+  const rows = [];
+  // Log de la primera fila de datos para diagnóstico
+  if(lines.length > 1) {
+    const sample = parseCSVLine(lines[1]);
+    console.log('📋 CSV muestra fila 1:', sample);
+    console.log('📋 Costo parseado:', parseCosto(sample[4]));
+  }
+  for(let i=1;i<lines.length;i++){
+    const cols = parseCSVLine(lines[i]);
+    if(cols[0]) rows.push({
+      bundle: cols[0],
+      cantidad: parseFloat(String(cols[1]).replace(/,/g,''))||1,
+      componente: cols[2],
+      descripcion: cols[3],
+      costo: parseCosto(cols[4])
+    });
+  }
+  return rows;
+}
+
+function buildBundleMap() {
+  bundleMap = {};
+  sheetData.forEach(row => {
+    if(!bundleMap[row.bundle]) bundleMap[row.bundle]=[];
+    bundleMap[row.bundle].push(row);
+  });
+}
+
+function loadDemoData() {
+  // Demo data basada en el sheet real
+  const demo = [
+    {bundle:'200401401AP',cantidad:1,componente:'200401401',descripcion:'COLCHON AMERICA MIAMI IND',costo:3200},
+    {bundle:'200401401AP',cantidad:1,componente:'24131141',descripcion:'ALMOHADAS BASIC ATLAS 2 PACK',costo:280},
+    {bundle:'200401401AP',cantidad:1,componente:'240112181',descripcion:'PROTECTOR DE COLCHÓN INDIVIDUAL BASIC ATLAS',costo:175},
+    {bundle:'200401401B',cantidad:1,componente:'200401401',descripcion:'COLCHON AMERICA MIAMI IND',costo:3200},
+    {bundle:'200401401B',cantidad:1,componente:'2421001',descripcion:'BOX CARREIRO INDIVIDUAL',costo:1450},
+    {bundle:'200401601SPAB',cantidad:1,componente:'200401601',descripcion:'COLCHON AMERICA FRIDA IND',costo:2949},
+    {bundle:'200401601SPAB',cantidad:1,componente:'2421001',descripcion:'BOX CARREIRO INDIVIDUAL',costo:1200},
+    {bundle:'200401601SPAB',cantidad:1,componente:'24131141',descripcion:'ALMOHADAS BASIC ATLAS 2 PACK',costo:280},
+    {bundle:'200401601SPAB',cantidad:1,componente:'240112181',descripcion:'PROTECTOR DE COLCHÓN INDIVIDUAL BASIC ATLAS',costo:175},
+    {bundle:'200401601SPAB',cantidad:1,componente:'240113401',descripcion:'JUEGO DE SABANAS ATLAS SOFT INDIVIDUAL BLANCO',costo:145},
+    {bundle:'200401504BAP',cantidad:1,componente:'200401504',descripcion:'COLCHON AMERICA MISURI KS',costo:6800},
+    {bundle:'200401504BAP',cantidad:2,componente:'2421001',descripcion:'BOX CARREIRO INDIVIDUAL',costo:1200},
+    {bundle:'200401504BAP',cantidad:1,componente:'24131141',descripcion:'ALMOHADAS BASIC ATLAS 2 PACK',costo:280},
+    {bundle:'200401504BAP',cantidad:1,componente:'24131154',descripcion:'PROTECTOR ATLAS WATERPROOF PREMIUM KING',costo:320},
+    {bundle:'200401602BB',cantidad:1,componente:'200401602',descripcion:'COLCHON AMERICA FRIDA MAT',costo:3500},
+    {bundle:'200401602BB',cantidad:1,componente:'201202152',descripcion:'BOX PRINCIPE P MATRIMONIAL',costo:2200},
+    {bundle:'200401602BB',cantidad:2,componente:'2414002',descripcion:'BURO KYGO',costo:890},
+  ];
+  sheetData = demo;
+  buildBundleMap();
+}
+
+/* =============================================
+   CHANNEL TABS
+============================================= */
+function buildChannelTabs() {
+  ['channelTabsInd','channelTabsMas'].forEach((id,idx) => {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    el.style.gridTemplateColumns = `repeat(${canales.length},1fr)`;
+    canales.forEach((ch,i) => {
+      const b = document.createElement('button');
+      b.className = 'channel-tab' + (i===0?' active-ch':'');
+      b.dataset.chId = ch.id;
+      b.textContent = ch.nombre;
+      b.onclick = () => selectChannel(ch.id, idx===0?'ind':'mas');
+      el.appendChild(b);
+    });
+    if(canales.length>0 && !currentChannel) currentChannel = canales[0];
+  });
+  updateChannelParamUI('ind');
+  updateChannelParamUI('mas');
+}
+
+function selectChannel(chId, scope) {
+  const ch = canales.find(c=>c.id===chId);
+  if(!ch) return;
+  currentChannel = ch;
+  const containerId = scope==='ind'?'channelTabsInd':'channelTabsMas';
+  document.querySelectorAll(`#${containerId} .channel-tab`).forEach(b=>{
+    b.classList.toggle('active-ch', b.dataset.chId===chId);
+  });
+  updateChannelParamUI(scope);
+  if(scope==='ind') calcularIndividual();
+}
+
+function updateChannelParamUI(scope) {
+  const ch = currentChannel;
+  if(!ch) return;
+  const isGuias = ch.tipoEnvio==='guias';
+  const isTabla = ch.tipoEnvio==='tabla';
+  if(scope==='ind'){
+    // Ocultar paneles legacy separados (el contenido se inyecta en livParamsInd)
+    ['paramEnvioCustom','paramEnvioTabla'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.classList.add('hidden');
+    });
+    // Inyectar UI de envío directamente en el contenedor siempre visible
+    const lp = document.getElementById('livParamsInd');
+    if(!lp) return;
+    if(isGuias){
+      lp.innerHTML = `
+        <div class="field">
+          <label class="field-label"># Guías de envío</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="cambiarGuias(-1)" style="padding:4px 11px;flex-shrink:0;font-size:16px;line-height:1">−</button>
+            <div style="flex:1;text-align:center;font-weight:700;font-size:15px;color:var(--atlas-navy)" id="guiasIndLabel">1</div>
+            <button class="btn btn-outline btn-sm" onclick="cambiarGuias(1)" style="padding:4px 11px;flex-shrink:0;font-size:16px;line-height:1">+</button>
+            <span style="font-size:12px;color:var(--text2);white-space:nowrap">guía(s)</span>
+          </div>
+          <input type="hidden" id="guiasInd" value="1">
+        </div>`;
+    } else if(isTabla){
+      _envioTablaItems = [''];
+      lp.innerHTML = `
+        <div class="field">
+          <label class="field-label">Envíos (catálogo)</label>
+          <div id="envioTablaItems"></div>
+          <button class="btn btn-outline btn-sm" id="btnAgregarEnvio" onclick="agregarEnvioTabla()" style="margin-top:6px;width:100%">+ Agregar envío</button>
+        </div>`;
+      renderEnvioTablaItems();
+    } else {
+      lp.innerHTML = `
+        <div class="field">
+          <label class="field-label">Costo de envío $</label>
+          <input class="input" type="number" id="envioCustom" value="${ch.envioFijo||900}" oninput="calcularIndividual()">
+        </div>`;
+    }
+  } else {
+    // Actualizar hint de columnas según canal
+    const colsEl = document.getElementById('masColsHint');
+    const descEl = document.getElementById('masColsDesc');
+    if(colsEl) {
+      if(isGuias) {
+        colsEl.innerHTML = `
+          <span style="color:var(--atlas-navy);font-weight:600">SKU</span><br>
+          <span style="color:var(--atlas-navy);font-weight:600">MargenOferta</span> <span style="font-family:var(--font);color:var(--text3)">(ej. 18)</span><br>
+          <span style="color:var(--atlas-navy);font-weight:600">Envio</span> <span style="font-family:var(--font);color:var(--text3)">(núm. de guías: 1–5)</span>`;
+        if(descEl) descEl.textContent = 'Cada fila puede tener diferente margen y número de guías. El costo se calcula automáticamente por tarifa.';
+      } else {
+        const tipos = envioData.length ? envioData.map(r=>r.tipo).join(', ') : 'tipo según hoja Costoenvios';
+        colsEl.innerHTML = `
+          <span style="color:var(--atlas-navy);font-weight:600">SKU</span><br>
+          <span style="color:var(--atlas-navy);font-weight:600">MargenOferta</span> <span style="font-family:var(--font);color:var(--text3)">(ej. 18)</span><br>
+          <span style="color:var(--atlas-navy);font-weight:600">Envio 1</span> <span style="font-family:var(--font);color:var(--text3)">(requerido · ${tipos})</span><br>
+          <span style="color:var(--atlas-navy);font-weight:600">Envio 2 … Envio 5</span> <span style="font-family:var(--font);color:var(--text3)">(opcionales)</span>`;
+        if(descEl) descEl.textContent = 'Se suman los costos de todos los envíos con valor. Puede ser nombre de tipo (catálogo) o monto directo.';
+      }
+    }
+  }
+  const thPsic = document.getElementById('th-psic-mas');
+  if(thPsic) thPsic.textContent = 'PSIC';
+}
+
+
+/* =============================================
+   MOTOR DE CÁLCULO
+============================================= */
+function calcularBundle(skuBundle, ch, margen, guias, envioOverride) {
+  const componentes = bundleMap[skuBundle];
+  if(!componentes || componentes.length===0) return null;
+
+  // Verificar si hay costos faltantes
+  const sinCosto = componentes.filter(c=>!c.costo||c.costo===0);
+
+  // Costo de la bolsa según tamaño detectado en descripciones
+  const tamano = detectarTamano(componentes);
+  const costoBolsa = tamano ? COSTO_BOLSA[tamano] : 0;
+
+  // Costo sin IVA total = SUM(cantidad * costo) + bolsa
+  const costoSinIva = componentes.reduce((acc,c) => acc + (c.cantidad||1)*c.costo, 0) + costoBolsa;
+  // Costo con IVA (× 1.16)
+  const costoIva = costoSinIva * 1.16;
+
+  // Colchón principal = primer componente cuyo SKU no es accesorio
+  const colchonComp = componentes[0];
+  const costoColchon = colchonComp ? colchonComp.costo * (colchonComp.cantidad||1) : 0;
+
+  // Gasto almacén
+  const gaRate = (ch.gaRate ?? 3) / 100;
+  const ga = ch.baseGA==='colchon' ? costoColchon * gaRate : costoIva * gaRate;
+  const gm = ch.maniobra || GASTO_MANIOBRA;
+
+  // Costo fijo
+  const costoFijo = costoIva + ga + gm;
+
+  // Precio lleno = REDOND.MULT(costoFijo / (1 - factorPL/100), 50) - 1
+  const factorPL = (ch.factorPL||75) / 100;
+  const precioLleno = redondMult(costoFijo / (1 - factorPL), 50) - 1;
+
+  // Envío
+  let envio = 0;
+  if(envioOverride !== undefined) {
+    envio = envioOverride;
+  } else if(ch.tipoEnvio==='guias') {
+    const g = parseInt(guias)||1;
+    // Tarifa base por 1 guía según rango de costo
+    let tarifaBase = costoIva < 2455 ? 1250 : costoIva < 5063 ? 1738 : 2500;
+    envio = tarifaBase * g;
+  } else {
+    envio = ch.envioFijo || 900;
+  }
+
+  // Comisión = PV × comision%  (resolución directa)
+  // TG = CF + PV*comis + ENVIO
+  // PO = TG/(1-margen) = (CF + PV*comis + ENVIO)/(1-margen)
+  // PV ≈ PO, entonces: PV*(1-margen) = CF + PV*comis + ENVIO
+  // PV*(1-margen-comis) = CF + ENVIO
+  const comisRate = (ch.comision||0)/100;
+  const margenRate = margen/100;
+  const pvExacto = (costoFijo + envio) / (1 - margenRate - comisRate);
+  // Precio venta: redondear al número que termine en 9 más cercano
+  const precioVenta = Math.ceil(pvExacto / 10) * 10 - 1;
+  const precioOferta = pvExacto;
+  const comision = precioVenta * comisRate;
+  const totalGastos = costoFijo + comision + envio;
+  const utilidad = precioVenta - totalGastos;
+  const utilidadPct = utilidad / precioVenta;
+
+  // PSIC
+  const psic = (precioVenta / precioLleno) - 1;
+  const psicOk = psic >= (ch.psicMin || -0.75);
+
+  return {
+    sku: skuBundle, componentes, sinCosto,
+    tamano, costoBolsa,
+    costoSinIva, costoIva, costoColchon,
+    ga, gm, costoFijo,
+    factorPL: ch.factorPL||75, precioLleno,
+    envio, comision, comisRate,
+    totalGastos, precioOferta, precioVenta,
+    utilidad, utilidadPct, psic, psicOk,
+    margen, canal: ch.nombre
+  };
+}
+
+/* =============================================
+   COTIZADOR INDIVIDUAL
+============================================= */
+function buscarSKU() {
+  const q = document.getElementById('skuSearch').value.trim().toUpperCase();
+  const results = document.getElementById('skuResults');
+  if(!q){ results.innerHTML=''; return; }
+
+  const matches = Object.keys(bundleMap).filter(k=>k.toUpperCase().includes(q)).slice(0,8);
+  if(matches.length===0){
+    results.innerHTML='<div class="alert alert-warning" style="margin-top:6px"><span>⚠️</span><div>SKU no encontrado en catálogo</div></div>';
+    return;
+  }
+  results.innerHTML = matches.map(sku=>`
+    <div onclick="seleccionarSKU('${sku}')" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:12px;
+      background:var(--surface2);border:1px solid var(--border);margin-top:4px;transition:background .1s"
+      onmouseover="this.style.background='var(--atlas-navy-light)'" onmouseout="this.style.background='var(--surface2)'">
+      <span style="font-family:var(--mono);font-weight:500;color:var(--atlas-navy)">${sku}</span>
+      <span style="color:var(--text3);font-size:11px;margin-left:6px">${bundleMap[sku][0].descripcion}</span>
+    </div>`).join('');
+}
+
+function seleccionarSKU(sku) {
+  document.getElementById('skuSearch').value = sku;
+  document.getElementById('skuResults').innerHTML = '';
+  calcularIndividual(sku);
+}
+
+function calcularIndividual(skuOverride) {
+  const sku = skuOverride || document.getElementById('skuSearch').value.trim();
+  if(!sku || !bundleMap[sku]) { return; }
+  if(!currentChannel) return;
+
+  const margen = parseFloat(document.getElementById('margenInd').value)||18;
+  const guias = document.getElementById('guiasInd')?.value || '1';
+  let envioOverride;
+  if(currentChannel.tipoEnvio==='guias') envioOverride = undefined;
+  else if(currentChannel.tipoEnvio==='tabla'){
+    envioOverride = _envioTablaItems.reduce((sum, v) => sum + (v ? (envioMap[v.toUpperCase()] || 0) : 0), 0);
+  } else envioOverride = parseFloat(document.getElementById('envioCustom')?.value)||900;
+
+  const r = calcularBundle(sku, currentChannel, margen, guias, envioOverride);
+  if(!r){ return; }
+
+  // Mostrar info del bundle
+  document.getElementById('bundleEmpty').classList.add('hidden');
+  document.getElementById('bundleInfo').classList.remove('hidden');
+  document.getElementById('btnGenerarPDF').style.display='flex';
+
+  document.getElementById('r-sku').textContent = sku;
+  document.getElementById('r-desc').textContent = r.componentes[0]?.descripcion||sku;
+  document.getElementById('r-meta').textContent = `${r.canal} · ${r.componentes.length} componentes`;
+  document.getElementById('r-canal-badge').className = 'badge ' + (currentChannel.id==='liverpool'?'badge-red':'badge-navy');
+  document.getElementById('r-canal-badge').textContent = r.canal;
+
+  // Componentes table
+  const tbody = document.getElementById('r-componentes');
+  tbody.innerHTML = r.componentes.map(c=>`
+    <tr>
+      <td>${c.descripcion}</td>
+      <td class="mono-cell">${c.componente}</td>
+      <td class="right">${c.cantidad}</td>
+      <td class="right">${c.costo?fmt(c.costo):'<span style="color:var(--danger)">Sin costo</span>'}</td>
+      <td class="right">${c.costo?fmt(c.costo*c.cantidad):'—'}</td>
+    </tr>`).join('');
+  // Fila bolsa
+  if(r.costoBolsa > 0) {
+    const labelTam = {individual:'Individual',matrimonial:'Matrimonial',queen:'Queen',king:'King'}[r.tamano]||r.tamano;
+    tbody.innerHTML += `<tr style="color:var(--text2)">
+      <td>Bolsa ${labelTam}</td>
+      <td class="mono-cell">—</td>
+      <td class="right">1</td>
+      <td class="right">${fmt(r.costoBolsa)}</td>
+      <td class="right">${fmt(r.costoBolsa)}</td>
+    </tr>`;
+  }
+  // Total row
+  tbody.innerHTML += `<tr style="background:var(--atlas-navy-light);font-weight:600">
+    <td colspan="3">Total sin IVA → × 1.16</td>
+    <td class="right">${fmt(r.costoSinIva)}</td>
+    <td class="right" style="color:var(--atlas-navy)">${fmt(r.costoIva)}</td></tr>`;
+
+  // Cálculos
+  document.getElementById('r-costoIva').textContent = fmt(r.costoIva);
+  document.getElementById('r-gastoAlm-label').textContent = `Gasto almacén (${currentChannel.gaRate ?? 3}%)`;
+  document.getElementById('r-gastoAlm').textContent = fmt(r.ga);
+  document.getElementById('r-gastoMan').textContent = fmt(r.gm);
+  document.getElementById('r-costoFijo').textContent = fmt(r.costoFijo);
+  document.getElementById('r-comision-label').textContent = `Comisión ${r.canal} (${r.comisRate*100}%)`;
+  document.getElementById('r-comision').textContent = fmt(r.comision);
+  document.getElementById('r-envio').textContent = fmt(r.envio);
+  document.getElementById('r-totalGastos').textContent = fmt(r.totalGastos);
+
+  document.getElementById('r-precioVenta').textContent = fmt(r.precioVenta).replace('.00','');
+  document.getElementById('r-factor-label').textContent = r.factorPL+'%';
+  document.getElementById('r-precioLleno').textContent = fmt(r.precioLleno);
+  document.getElementById('r-precioOferta').textContent = fmt(r.precioOferta);
+  document.getElementById('r-utilidad').textContent = fmt(r.utilidad);
+  document.getElementById('r-utilidadPct').textContent = fmtPct(r.utilidadPct);
+
+  // PSIC
+  const psicWrap = document.getElementById('r-psic-wrap');
+  psicWrap.innerHTML = `<div class="psic-badge ${r.psicOk?'psic-ok':'psic-fail'}">
+    <span>${r.psicOk?'✓':'✗'}</span>
+    <span>PSIC: ${(r.psic*100).toFixed(2)}% · ${r.psicOk?'Válido':'INVÁLIDO — ajustar precio'} (límite ${(currentChannel.psicMin*100).toFixed(0)}%)</span>
+  </div>`;
+
+  // Alerta si hay componentes sin costo
+  if(r.sinCosto.length>0){
+    psicWrap.innerHTML += `<div class="alert alert-warning" style="margin-top:8px">
+      <span class="alert-icon">⚠️</span>
+      <div>${r.sinCosto.length} componente(s) sin costo registrado. Resultado aproximado.</div></div>`;
+  }
+
+  // guardar última cotización para PDF y para agregar al carrito
+  window._lastQuot = r;
+}
+
+function cambiarGuias(delta) {
+  const input = document.getElementById('guiasInd');
+  const label = document.getElementById('guiasIndLabel');
+  let val = parseInt(input.value || '1') + delta;
+  val = Math.max(1, Math.min(5, val));
+  input.value = val;
+  if (label) label.textContent = val;
+  calcularIndividual();
+}
+
+function renderEnvioTablaItems() {
+  const container = document.getElementById('envioTablaItems');
+  const btnAgregar = document.getElementById('btnAgregarEnvio');
+  if(!container) return;
+  container.innerHTML = _envioTablaItems.map((val, i) => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <select class="input" onchange="updateEnvioTablaItem(${i},this.value)" style="flex:1">
+        <option value="">— Selecciona —</option>
+        ${envioData.map(r =>
+          `<option value="${r.tipo}" ${val===r.tipo?'selected':''}>${r.tipo} — $${r.costo.toLocaleString('es-MX')}</option>`
+        ).join('')}
+      </select>
+      ${_envioTablaItems.length > 1
+        ? `<button class="btn btn-ghost btn-sm" onclick="quitarEnvioTabla(${i})" style="color:var(--danger);padding:4px 8px;flex-shrink:0">✕</button>`
+        : ''}
+    </div>`).join('');
+  if(btnAgregar) btnAgregar.style.display = _envioTablaItems.length >= 5 ? 'none' : '';
+}
+
+function updateEnvioTablaItem(i, val) {
+  _envioTablaItems[i] = val;
+  calcularIndividual();
+}
+
+function agregarEnvioTabla() {
+  if(_envioTablaItems.length >= 5) return;
+  _envioTablaItems.push('');
+  renderEnvioTablaItems();
+}
+
+function quitarEnvioTabla(i) {
+  _envioTablaItems.splice(i, 1);
+  renderEnvioTablaItems();
+  calcularIndividual();
+}
+
+/* =============================================
+   CARGA MASIVA
+============================================= */
+function showSubtab(tab) {
+  document.getElementById('view-individual').classList.toggle('hidden', tab!=='individual');
+  document.getElementById('view-masivo').classList.toggle('hidden', tab!=='masivo');
+  document.getElementById('subtab-ind').className = 'btn btn-sm '+(tab==='individual'?'btn-primary':'btn-ghost');
+  document.getElementById('subtab-mas').className = 'btn btn-sm '+(tab==='masivo'?'btn-primary':'btn-ghost');
+}
+
+function handleDrag(e, over) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.toggle('drag-over', over);
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file) procesarArchivo(file);
+}
+function handleFile(e) { if(e.target.files[0]) procesarArchivo(e.target.files[0]); }
+
+async function procesarArchivo(file) {
+  const pw = document.getElementById('progressWrap');
+  const pf = document.getElementById('progressFill');
+  const pl = document.getElementById('progressLabel');
+  pw.style.display='block'; pf.style.width='0%';
+  pl.textContent = 'Leyendo archivo...';
+
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data);
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+  const ch = currentChannel;
+
+  masivoResultados = [];
+  const total = rows.length;
+
+  for(let i=0;i<total;i++){
+    const row = rows[i];
+    const sku = (row['SKU_BUNDLE']||row['SKU']||row['Bundle']||row['BUNDLE']||row['Bundel']||'').toString().trim();
+    if(!sku) continue;
+
+    pf.style.width = ((i+1)/total*100)+'%';
+    pl.textContent = `Procesando ${i+1} de ${total}: ${sku}`;
+
+    // Margen y envío vienen por fila del Excel
+    const margen = parseFloat(row['MargenOferta'])||18;
+
+    let guias = '1';
+    let envioOverride;
+
+    if(ch.tipoEnvio==='guias'){
+      // Liverpool: columna "Envio" con número de guías 1-5 (texto o número)
+      const envioRaw = (row['Envio']||row['ENVIO']||row['envio']||'').toString().trim();
+      const numMatch = envioRaw.match(/\d+/);
+      const numGuias = numMatch ? Math.min(5, Math.max(1, parseInt(numMatch[0]))) : 1;
+      guias = String(numGuias);
+      envioOverride = undefined; // usa cálculo automático tarifaBase × guías
+    } else {
+      // Marketplace / otros: nuevo template Envio 1 … Envio 5
+      // Cada columna puede ser nombre de tipo (lookup en envioMap) o monto directo
+      let envioSuma = 0;
+      let hayEnvioNuevo = false;
+      for(let e = 1; e <= 5; e++) {
+        const rawVal = (row[`Envio ${e}`] ?? row[`ENVIO ${e}`] ?? row[`envio ${e}`] ?? '').toString().trim();
+        if(rawVal !== '') {
+          const keyUp = rawVal.toUpperCase();
+          let costo = 0;
+          if(envioMap[keyUp] !== undefined) costo = envioMap[keyUp];
+          else { const v = parseCosto(rawVal); if(!isNaN(v) && v > 0) costo = v; }
+          if(costo > 0) { envioSuma += costo; hayEnvioNuevo = true; }
+        }
+      }
+      if(hayEnvioNuevo) {
+        envioOverride = envioSuma;
+      } else {
+        // Fallback: columna única "Envio" (template viejo)
+        const envioRaw = (row['Envio']||row['ENVIO']||row['envio']||'').toString().trim();
+        const keyUp = envioRaw.toUpperCase();
+        if(envioRaw && envioMap[keyUp] !== undefined) envioOverride = envioMap[keyUp];
+        else if(envioRaw && !isNaN(parseCosto(envioRaw))) envioOverride = parseCosto(envioRaw);
+        else envioOverride = ch.envioFijo || 0;
+      }
+    }
+
+    const r = calcularBundle(sku, ch, margen, guias, envioOverride);
+    if(!r){
+      masivoResultados.push({sku, descripcion: row['DESCRIPCION']||'', estado:'err', msg:'SKU no encontrado'});
+    } else {
+      r.estado = !r.psicOk ? 'warn' : r.sinCosto.length>0 ? 'warn' : 'ok';
+      masivoResultados.push(r);
+    }
+    await new Promise(res=>setTimeout(res,0));
+  }
+
+  pf.style.width='100%';
+  pl.textContent = `Completado: ${masivoResultados.length} SKUs procesados`;
+  renderMasivo();
+}
+
+function renderMasivo() {
+  const res = document.getElementById('masResults');
+  res.classList.remove('hidden');
+  masivoFiltered = [...masivoResultados];
+
+  const ok = masivoResultados.filter(r=>r.estado==='ok').length;
+  const warn = masivoResultados.filter(r=>r.estado==='warn').length;
+  const err = masivoResultados.filter(r=>r.estado==='err').length;
+
+  document.getElementById('masMetrics').innerHTML = `
+    <div class="metric-card"><div class="metric-label">Total SKUs</div><div class="metric-value">${masivoResultados.length}</div></div>
+    <div class="metric-card"><div class="metric-label">Calculados OK</div><div class="metric-value" style="color:var(--success)">${ok}</div></div>
+    <div class="metric-card"><div class="metric-label">PSIC inválido / alertas</div><div class="metric-value" style="color:var(--warning)">${warn}</div></div>
+    <div class="metric-card"><div class="metric-label">Sin costo / error</div><div class="metric-value" style="color:var(--danger)">${err}</div></div>`;
+
+  renderMasivoTable(masivoFiltered);
+}
+
+function renderMasivoTable(data) {
+  const body = document.getElementById('masBody');
+  body.innerHTML = data.map(r => {
+    if(r.estado==='err') return `
+      <tr><td class="mono-cell">${r.sku}</td><td>${r.descripcion||'—'}</td>
+      <td colspan="7" style="color:var(--danger);font-size:12px">${r.msg}</td>
+      <td class="center"><span class="badge badge-danger">Error</span></td></tr>`;
+    const psicColor = r.psicOk?'var(--success)':'var(--danger)';
+    const psicText = (r.psic*100).toFixed(1)+'%';
+    return `<tr>
+      <td class="mono-cell">${r.sku}</td>
+      <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.componentes[0]?.descripcion||'—'}</td>
+      <td class="right">${fmt(r.costoIva)}</td>
+      <td class="right">${fmt(r.envio)}</td>
+      <td class="right">${r.margen}%</td>
+      <td class="right">${fmt(r.precioLleno)}</td>
+      <td class="right" style="font-weight:600">${fmt(r.precioVenta)}</td>
+      <td class="right" style="color:${r.utilidadPct>0.15?'var(--success)':'var(--warning)'}">${fmtPct(r.utilidadPct)}</td>
+      <td class="right" style="color:${psicColor};font-family:var(--mono);font-size:11px">${psicText}</td>
+      <td class="center"><span class="badge ${r.estado==='ok'?'badge-success':r.estado==='warn'?'badge-warning':'badge-danger'}">${r.estado==='ok'?'OK':r.estado==='warn'?'Revisar':'Error'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarMasivo() {
+  const q = document.getElementById('masSearch').value.toLowerCase();
+  const f = document.getElementById('masFilter').value;
+  masivoFiltered = masivoResultados.filter(r=>{
+    const matchQ = !q || r.sku.toLowerCase().includes(q) ||
+      (r.componentes&&r.componentes[0]?.descripcion?.toLowerCase().includes(q));
+    const matchF = f==='all' || r.estado===f;
+    return matchQ && matchF;
+  });
+  renderMasivoTable(masivoFiltered);
+}
+
+function exportarExcel() {
+  const data = masivoFiltered.map(r => r.estado==='err'
+    ? {SKU:r.sku, Estado:'Error', Mensaje:r.msg}
+    : {
+        SKU: r.sku,
+        Descripcion: r.componentes[0]?.descripcion||'',
+        Canal: r.canal,
+        CostoIVA: r.costoIva.toFixed(2),
+        PrecioLleno: r.precioLleno,
+        PrecioVenta: r.precioVenta,
+        UtilidadPct: (r.utilidadPct*100).toFixed(2)+'%',
+        PSIC: (r.psic*100).toFixed(2)+'%',
+        Estado: r.estado==='ok'?'OK':r.estado==='warn'?'Revisar':'Error'
+      });
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Cotizacion');
+  XLSX.writeFile(wb, `Cotizacion_Atlas_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function descargarPlantilla() {
+  const canal = currentChannel?.nombre || 'Canal';
+  const esGuias = currentChannel?.tipoEnvio === 'guias';
+  let datos, cols;
+  if(esGuias) {
+    // Liverpool: columna Envio con número de guías (1-5)
+    datos = [
+      ['SKU', 'MargenOferta', 'Envio'],
+      ['200401401AP',  18, 1],
+      ['200401601SPAB',20, 2],
+      ['200401504BAP', 18, 1],
+    ];
+    cols = [{wch:18},{wch:14},{wch:10}];
+  } else {
+    // Marketplace / otros: Envio 1…Envio 5 (nombre de tipo o monto)
+    const ej  = envioData.length ? envioData[0].tipo : 'KING';
+    const ej2 = envioData.length > 1 ? envioData[1].tipo : 'INDIVIDUAL';
+    datos = [
+      ['SKU', 'MargenOferta', 'Envio 1', 'Envio 2', 'Envio 3', 'Envio 4', 'Envio 5'],
+      ['200401401AP',  18, ej,  '',  '',  '', ''],
+      ['200401601SPAB',20, ej,  ej2, '',  '', ''],
+      ['200401504BAP', 18, ej,  ej2, ej,  '', ''],
+    ];
+    cols = [{wch:18},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
+  }
+  const ws = XLSX.utils.aoa_to_sheet(datos);
+  ws['!cols'] = cols;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Cotizacion');
+  XLSX.writeFile(wb, `Plantilla_Cotizacion_${canal.replace(/\s+/g,'_')}.xlsx`);
+}
+
+function descargarCatalogoCostos() {
+  if(!sheetData.length){ alert('Primero sincroniza el catálogo'); return; }
+  const ws = XLSX.utils.json_to_sheet(sheetData.map(r=>({
+    SKU_BUNDLE: r.bundle, CANTIDAD: r.cantidad, SKU_COMPONENTE: r.componente,
+    DESCRIPCION: r.descripcion, COSTO_SIN_IVA: r.costo
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Costos');
+  XLSX.writeFile(wb, `Catalogo_Costos_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function descargarCatalogoEnvios() {
+  if(!envioData.length){ alert('Primero sincroniza el catálogo'); return; }
+  const ws = XLSX.utils.json_to_sheet(envioData.map(r=>({ TIPO_ENVIO: r.tipo, COSTO_ENVIO: r.costo })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'CostosEnvio');
+  XLSX.writeFile(wb, `Catalogo_CostosEnvio_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+/* =============================================
+   GENERACIÓN DE PDF
+============================================= */
+function generarPDF() {
+  const r = window._lastQuot;
+  if(!r) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm',format:'a4'});
+  const W=210, M=15, cW=W-M*2;
+  let y=M;
+
+  // Header background
+  doc.setFillColor(27,47,91);
+  doc.rect(0,0,W,38,'F');
+
+  // Logo mark
+  doc.setFillColor(200,32,47);
+  doc.roundedRect(M,M-2,20,20,3,3,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','bold');
+  doc.text('ATLAS',M+10,M+10,{align:'center'});
+
+  // Brand
+  doc.setFontSize(14);
+  doc.setFont('helvetica','bold');
+  doc.text('Grupo Comercial Atlas',M+26,M+5);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(180,195,230);
+  doc.text('COTIZADOR ECOMMERCE · KAM',M+26,M+11);
+  doc.text('Radial Toltecas 1197, Tlalnepantla, Méx.',M+26,M+16);
+
+  // Doc info (right)
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(12);
+  doc.setFont('helvetica','bold');
+  doc.text('Cotización de venta',W-M,M+5,{align:'right'});
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(200,180,180);
+  const folio = 'COT-'+r.canal.substring(0,3).toUpperCase()+'-'+new Date().toISOString().replace(/[-:T.Z]/g,'').substring(0,14);
+  doc.text(folio,W-M,M+12,{align:'right'});
+  doc.setTextColor(180,195,230);
+  doc.text(new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'}),W-M,M+18,{align:'right'});
+  doc.text('Elaboró: '+currentUser.nombre,W-M,M+23,{align:'right'});
+
+  y=46;
+
+  // Status bar
+  doc.setFillColor(200,32,47);
+  doc.rect(M,y,cW,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','bold');
+  doc.text('PENDIENTE DE AUTORIZACIÓN — Finanzas',M+4,y+5.5);
+  doc.text('Vigencia: 15 días naturales',W-M-2,y+5.5,{align:'right'});
+  y+=12;
+
+  // Info artículo
+  doc.setTextColor(27,47,91);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.text('INFORMACIÓN DEL ARTÍCULO',M,y);
+  doc.setDrawColor(27,47,91);
+  doc.line(M,y+1,M+cW,y+1);
+  y+=5;
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(60,70,90);
+  doc.setFontSize(8);
+  doc.text(`SKU Bundle: ${r.sku}`,M,y);
+  doc.text(`Canal: ${r.canal}`,M+cW/2,y);
+  y+=5;
+  doc.text(`Descripción: ${r.componentes[0]?.descripcion||r.sku}`,M,y);
+  y+=5;
+  doc.text(`Componentes: ${r.componentes.length} · Margen: ${r.margen}%`,M,y);
+  y+=10;
+
+  // Componentes table
+  doc.setTextColor(27,47,91);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.text('COMPOSICIÓN DEL BUNDLE',M,y);
+  doc.line(M,y+1,M+cW,y+1);
+  y+=5;
+
+  // Table header
+  doc.setFillColor(27,47,91);
+  doc.rect(M,y,cW,6,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica','bold');
+  const colW=[70,30,15,30,30];
+  const colX=[M,M+70,M+100,M+115,M+145];
+  ['Componente','SKU','Cant.','Costo s/IVA','Subtotal'].forEach((h,i)=>{
+    doc.text(h,colX[i]+(i>1?colW[i]/2:2),y+4,{align:i>1?'center':'left'});
+  });
+  y+=6;
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7.5);
+  r.componentes.forEach((c,idx)=>{
+    if(idx%2===0){doc.setFillColor(245,247,252);doc.rect(M,y,cW,5.5,'F');}
+    doc.setTextColor(40,50,70);
+    const desc = c.descripcion.length>35 ? c.descripcion.substring(0,33)+'...' : c.descripcion;
+    doc.text(desc,colX[0]+2,y+4);
+    doc.text(c.componente,colX[1]+2,y+4);
+    doc.text(c.cantidad.toString(),colX[2]+colW[2]/2,y+4,{align:'center'});
+    const costo = c.costo?fmt(c.costo):'Sin costo';
+    const sub = c.costo?fmt(c.costo*c.cantidad):'—';
+    doc.text(costo,colX[3]+colW[3],y+4,{align:'right'});
+    doc.text(sub,colX[4]+colW[4],y+4,{align:'right'});
+    y+=5.5;
+  });
+  // Total row
+  doc.setFillColor(238,242,250);
+  doc.rect(M,y,cW,6,'F');
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(27,47,91);
+  doc.text('Total sin IVA → × 1.16',M+2,y+4);
+  doc.text(fmt(r.costoSinIva),colX[3]+colW[3],y+4,{align:'right'});
+  doc.text(fmt(r.costoIva),colX[4]+colW[4],y+4,{align:'right'});
+  y+=10;
+
+  // Cálculos en 2 columnas
+  doc.setTextColor(27,47,91);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.text('CÁLCULO DE COTIZACIÓN',M,y);
+  doc.line(M,y+1,M+cW,y+1);
+  y+=5;
+
+  const col1X=M, col2X=M+cW/2+5, boxW=cW/2-5;
+  const rowH=5.5;
+
+  const drawCalcBox=(title,rows,x,yStart)=>{
+    doc.setFillColor(245,247,252);
+    doc.rect(x,yStart,boxW,6+rows.length*rowH+2,'F');
+    doc.setDrawColor(220,225,235);
+    doc.rect(x,yStart,boxW,6+rows.length*rowH+2);
+    doc.setFillColor(27,47,91);
+    doc.rect(x,yStart,boxW,6,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica','bold');
+    doc.text(title,x+3,yStart+4.5);
+    let ry=yStart+8;
+    rows.forEach(([label,val,bold])=>{
+      doc.setFont('helvetica',bold?'bold':'normal');
+      doc.setTextColor(bold?27:70,bold?47:80,bold?91:100);
+      doc.setFontSize(7.5);
+      doc.text(label,x+3,ry);
+      doc.text(val,x+boxW-2,ry,{align:'right'});
+      ry+=rowH;
+    });
+  };
+
+  const yCalc=y;
+  drawCalcBox('ESTRUCTURA DE COSTOS',[
+    ['Costo c/IVA (× 1.16)',fmt(r.costoIva)],
+    ['Gasto almacén (3%)',fmt(r.ga)],
+    ['Gasto maniobra',fmt(r.gm)],
+    ['Costo fijo',fmt(r.costoFijo),true],
+  ],col1X,yCalc);
+
+  drawCalcBox('PRECIOS Y COMISIONES',[
+    [`Comisión ${r.canal} (${(r.comisRate*100).toFixed(0)}%)`,fmt(r.comision)],
+    ['Envío',fmt(r.envio)],
+    ['Margen campaña',r.margen+'%'],
+    ['Total gastos',fmt(r.totalGastos),true],
+  ],col2X,yCalc);
+
+  y += 6 + 4*rowH + 10;
+
+  // Result bar
+  doc.setFillColor(27,47,91);
+  doc.roundedRect(M,y,cW,20,3,3,'F');
+  const thirds=cW/3;
+  doc.setTextColor(180,195,230);
+  doc.setFontSize(7);
+  doc.setFont('helvetica','normal');
+  doc.text('PRECIO DE VENTA',M+thirds*0+thirds/2,y+5,{align:'center'});
+  doc.text('UTILIDAD NETA',M+thirds*1+thirds/2,y+5,{align:'center'});
+  doc.text('PRECIO LLENO',M+thirds*2+thirds/2,y+5,{align:'center'});
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(13);
+  doc.setFont('helvetica','bold');
+  doc.text(fmt(r.precioVenta),M+thirds*0+thirds/2,y+13,{align:'center'});
+  doc.setTextColor(140,232,187);
+  doc.text(fmtPct(r.utilidadPct),M+thirds*1+thirds/2,y+13,{align:'center'});
+  doc.setTextColor(245,163,167);
+  doc.text((r.psic*100).toFixed(1)+'%',M+thirds*2+thirds/2,y+13,{align:'center'});
+  doc.setTextColor(180,195,230);
+  doc.setFontSize(7);
+  doc.setFont('helvetica','normal');
+  doc.text('termina en 9',M+thirds*0+thirds/2,y+18,{align:'center'});
+  doc.text(fmt(r.utilidad)+' MXN',M+thirds*1+thirds/2,y+18,{align:'center'});
+  doc.text('Factor PL: '+r.factorPL+'%',M+thirds*2+thirds/2,y+18,{align:'center'});
+  y+=24;
+
+  // PSIC
+  const psicColor = r.psicOk?[26,107,58]:[200,32,47];
+  doc.setFillColor(...psicColor.map(c=>Math.floor(c*0.15+240*0.85)));
+  doc.roundedRect(M,y,cW,9,2,2,'F');
+  doc.setTextColor(...psicColor);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','bold');
+  doc.text(r.psicOk?'✓ Validación PSIC aprobada':'✗ PSIC fuera de límite — revisar precio',M+4,y+6);
+  doc.setFont('helvetica','normal');
+  doc.text(`PSIC: ${(r.psic*100).toFixed(2)}% · Límite: ${(currentChannel.psicMin*100).toFixed(0)}% · Precio lleno: ${fmt(r.precioLleno)}`,W-M-2,y+6,{align:'right'});
+  y+=14;
+
+  // FIRMAS
+  doc.setDrawColor(200,32,47);
+  doc.setLineWidth(0.8);
+  doc.line(M,y,M+cW,y);
+  doc.setLineWidth(0.2);
+  y+=6;
+  doc.setTextColor(200,32,47);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica','bold');
+  doc.text('AUTORIZACIÓN DEL DEPARTAMENTO DE FINANZAS',M,y);
+  y+=4;
+  doc.setTextColor(80,90,110);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal');
+  doc.text('Esta cotización requiere autorización formal antes de ser comunicada al canal de venta.',M,y);
+  y+=8;
+
+  const signW=(cW-10)/3, signBoxH=22;
+  const uFinanzas = usuarios.find(u=>u.puesto==='Director de Finanzas');
+  const uComercial= usuarios.find(u=>u.puesto==='Director Comercial');
+  const signs=[
+    ['KAM Elaboró',currentUser.nombre,'Canal Ecommerce'],
+    ['Autorización Finanzas',uFinanzas?uFinanzas.nombre:'Gerente / Director','Dto. Finanzas'],
+    ['Vo. Bo. Dirección Comercial',uComercial?uComercial.nombre:'Director Comercial','Dirección']
+  ];
+  signs.forEach(([title,name,role],i)=>{
+    const sx=M+i*(signW+5);
+    doc.setDrawColor(200,205,220);
+    doc.setLineWidth(0.3);
+    doc.rect(sx,y,signW,signBoxH);
+    // signature line
+    doc.setDrawColor(27,47,91);
+    doc.line(sx+5,y+signBoxH-7,sx+signW-5,y+signBoxH-7);
+    doc.setTextColor(27,47,91);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica','bold');
+    doc.text(title,sx+signW/2,y+4,{align:'center'});
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(100,110,130);
+    doc.text(name,sx+signW/2,y+9,{align:'center'});
+    doc.text(role,sx+signW/2,y+13,{align:'center'});
+    doc.text('Fecha: ____/____/________',sx+signW/2,y+signBoxH+3,{align:'center'});
+  });
+  y+=signBoxH+10;
+
+  // Footer
+  doc.setDrawColor(220,225,235);
+  doc.line(M,y,M+cW,y);
+  y+=4;
+  doc.setTextColor(150,160,175);
+  doc.setFontSize(7);
+  doc.text(`Documento generado por Cotizador KAM · Atlas del Descanso · ${folio}`,M,y);
+  doc.text('CONFIDENCIAL · Uso interno',W-M,y,{align:'right'});
+
+  doc.save(`Cotizacion_Atlas_${r.sku}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+function exportarPDFMasivo() {
+  const datos = masivoFiltered.filter(r=>r.estado!=='err');
+  if(!datos.length){ alert('No hay artículos válidos para generar el PDF.'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4', orientation:'landscape'});
+  const W=297, H=210, M=10, cW=W-M*2;
+  const folio = 'MAS-'+currentChannel.nombre.substring(0,3).toUpperCase()+'-'+new Date().toISOString().replace(/[-:T.Z]/g,'').substring(0,14);
+  const fecha = new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+
+  const drawHeader = () => {
+    doc.setFillColor(200,32,47);
+    doc.rect(0,0,W,28,'F');
+    doc.setFillColor(180,20,35);
+    doc.rect(0,0,M+30,28,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.text('ATLAS',M+15,11,{align:'center'});
+    doc.setFontSize(6); doc.setFont('helvetica','normal');
+    doc.text('GCA',M+15,16,{align:'center'});
+    doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('Grupo Comercial Atlas — Cotización Masiva',M+36,10);
+    doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+    doc.setTextColor(255,220,220);
+    doc.text(`Canal: ${currentChannel.nombre} · Margen: ${datos[0]?.margen}% · ${datos.length} artículos`,M+36,17);
+    doc.text(`Folio: ${folio}`,M+36,23);
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(7.5);
+    doc.text(`${fecha} · Elaboró: ${currentUser.nombre}`,W-M,10,{align:'right'});
+    doc.text('PENDIENTE DE AUTORIZACIÓN',W-M,17,{align:'right'});
+    doc.text('Vigencia: 15 días naturales',W-M,23,{align:'right'});
+  };
+
+  // columnas de la tabla
+  const cols = [
+    {h:'SKU Bundle',       w:32, align:'left'},
+    {h:'Descripción',      w:52, align:'left'},
+    {h:'Costo c/IVA',      w:22, align:'right'},
+    {h:'Envío',            w:18, align:'right'},
+    {h:'Margen',           w:14, align:'right'},
+    {h:'P. Lleno',         w:22, align:'right'},
+    {h:'P. Venta',         w:22, align:'right'},
+    {h:'Utilidad %',       w:18, align:'right'},
+    {h:'PSIC',             w:16, align:'right'},
+    {h:'Estado',           w:18, align:'center'},
+  ];
+  const totalW = cols.reduce((s,c)=>s+c.w,0);
+  const startX = M + (cW - totalW) / 2;
+  const rowH = 5.5, headH = 6.5;
+
+  const drawTableHeader = (y) => {
+    doc.setFillColor(60,70,90);
+    doc.rect(startX, y, totalW, headH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(6.5); doc.setFont('helvetica','bold');
+    let x = startX;
+    cols.forEach(c=>{
+      const tx = c.align==='right' ? x+c.w-1 : c.align==='center' ? x+c.w/2 : x+1;
+      doc.text(c.h, tx, y+4.5, {align:c.align==='right'?'right':c.align==='center'?'center':'left'});
+      x+=c.w;
+    });
+    return y + headH;
+  };
+
+  const drawRow = (r, y, idx) => {
+    if(idx%2===0){ doc.setFillColor(248,249,252); doc.rect(startX,y,totalW,rowH,'F'); }
+    doc.setFontSize(6); doc.setFont('helvetica','normal');
+    const psicOk = r.psicOk;
+    const vals = [
+      r.sku,
+      (r.componentes[0]?.descripcion||'').substring(0,28),
+      fmt(r.costoIva),
+      fmt(r.envio),
+      r.margen+'%',
+      fmt(r.precioLleno),
+      fmt(r.precioVenta),
+      fmtPct(r.utilidadPct),
+      (r.psic*100).toFixed(1)+'%',
+      r.estado==='ok'?'OK':'Revisar',
+    ];
+    let x = startX;
+    cols.forEach((c,i)=>{
+      let color = [50,60,75];
+      if(i===6) color=[27,47,91];
+      if(i===7) color = r.utilidadPct>0.15?[26,107,58]:[180,100,0];
+      if(i===8) color = psicOk?[26,107,58]:[200,32,47];
+      if(i===9) color = r.estado==='ok'?[26,107,58]:[180,100,0];
+      doc.setTextColor(...color);
+      if(i===6) doc.setFont('helvetica','bold');
+      else doc.setFont('helvetica','normal');
+      const tx = c.align==='right' ? x+c.w-1 : c.align==='center' ? x+c.w/2 : x+1;
+      doc.text(vals[i], tx, y+rowH-1.5, {align:c.align==='right'?'right':c.align==='center'?'center':'left'});
+      x+=c.w;
+    });
+  };
+
+  // ── Página 1 ──
+  drawHeader();
+  let y = 32;
+
+  // Métricas resumen
+  const ok   = masivoResultados.filter(r=>r.estado==='ok').length;
+  const warn = masivoResultados.filter(r=>r.estado==='warn').length;
+  const err  = masivoResultados.filter(r=>r.estado==='err').length;
+  const metricos = [`Total: ${masivoResultados.length}`, `OK: ${ok}`, `Alertas: ${warn}`, `Errores: ${err}`];
+  const mW = cW/metricos.length;
+  metricos.forEach((m,i)=>{
+    const isOk = i===1, isWarn=i===2, isErr=i===3;
+    doc.setFillColor(isOk?230:isWarn?255:isErr?255:240, isOk?245:isWarn?243:isErr?235:242, isOk?235:isWarn?224:isErr?230:248);
+    doc.rect(M+i*mW, y, mW-2, 7,'F');
+    doc.setTextColor(isOk?26:isWarn?140:isErr?200:40, isOk?107:isWarn?80:isErr?32:50, isOk?58:isWarn?0:isErr?47:75);
+    doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text(m, M+i*mW+mW/2-1, y+5, {align:'center'});
+  });
+  y += 11;
+
+  y = drawTableHeader(y);
+
+  let rowIdx = 0;
+  const pageBottom = H - 48; // espacio para firmas en última página
+
+  for(let i=0; i<datos.length; i++){
+    if(y + rowH > (i===datos.length-1 ? pageBottom : H-15)){
+      // nueva página
+      doc.addPage();
+      drawHeader();
+      y = 32;
+      y = drawTableHeader(y);
+      rowIdx = 0;
+    }
+    drawRow(datos[i], y, rowIdx);
+    y += rowH;
+    rowIdx++;
+  }
+
+  // línea separadora de la tabla
+  doc.setDrawColor(180,185,200); doc.setLineWidth(0.3);
+  doc.line(startX, y, startX+totalW, y);
+  y += 6;
+
+  // Totales
+  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(27,47,91);
+  const totalVenta = datos.reduce((s,r)=>s+r.precioVenta,0);
+  const avgUtil    = datos.reduce((s,r)=>s+r.utilidadPct,0)/datos.length;
+  doc.text(`Precio venta total: ${fmt(totalVenta)}`, startX+totalW-2, y, {align:'right'});
+  doc.text(`Utilidad promedio: ${fmtPct(avgUtil)}`, startX+totalW-2, y+5, {align:'right'});
+  y += 14;
+
+  // FIRMAS
+  if(y + 40 > H-10){ doc.addPage(); drawHeader(); y=36; }
+  doc.setDrawColor(200,32,47); doc.setLineWidth(0.8);
+  doc.line(M, y, M+cW, y); doc.setLineWidth(0.2); y+=5;
+  doc.setTextColor(200,32,47); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('AUTORIZACIÓN DEL DEPARTAMENTO DE FINANZAS', M, y); y+=4;
+  doc.setTextColor(80,90,110); doc.setFontSize(7); doc.setFont('helvetica','normal');
+  doc.text('Esta cotización masiva requiere autorización formal antes de ser comunicada al canal de venta.', M, y); y+=8;
+
+  const signW=(cW-15)/3, signBoxH=24;
+  const _uFin = usuarios.find(u=>u.puesto==='Director de Finanzas');
+  const _uCom = usuarios.find(u=>u.puesto==='Director Comercial');
+  [['KAM Elaboró',currentUser.nombre,'Canal Ecommerce'],
+   ['Autorización Finanzas',_uFin?_uFin.nombre:'Gerente / Director','Dto. Finanzas'],
+   ['Vo. Bo. Dirección Comercial',_uCom?_uCom.nombre:'Director Comercial','Dirección']
+  ].forEach(([title,name,role],i)=>{
+    const sx=M+i*(signW+7.5);
+    doc.setDrawColor(200,205,220); doc.setLineWidth(0.3);
+    doc.rect(sx, y, signW, signBoxH);
+    doc.setDrawColor(27,47,91);
+    doc.line(sx+5, y+signBoxH-7, sx+signW-5, y+signBoxH-7);
+    doc.setTextColor(27,47,91); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+    doc.text(title, sx+signW/2, y+4, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setTextColor(100,110,130);
+    doc.text(name, sx+signW/2, y+9, {align:'center'});
+    doc.text(role, sx+signW/2, y+13, {align:'center'});
+    doc.text('Fecha: ____/____/________', sx+signW/2, y+signBoxH+4, {align:'center'});
+  });
+  y += signBoxH + 12;
+
+  // Footer
+  doc.setDrawColor(220,225,235); doc.line(M,y,M+cW,y); y+=3;
+  doc.setTextColor(150,160,175); doc.setFontSize(6.5);
+  doc.text(`Cotizador KAM · Atlas del Descanso · ${folio}`, M, y);
+  doc.text('CONFIDENCIAL · Uso interno', W-M, y, {align:'right'});
+
+  doc.save(`Cotizacion_Masiva_${currentChannel.nombre}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+/* =============================================
+   ADMIN: CANALES
+============================================= */
+function renderChannelCards() {
+  const container = document.getElementById('channelCards');
+  if(!container) return;
+  container.innerHTML = canales.map(ch=>`
+    <div class="channel-card">
+      <div class="channel-card-head">
+        <span class="channel-card-name">${ch.nombre}</span>
+        <span class="badge ${ch.activo?'badge-success':'badge-gray'}">${ch.activo?'Activo':'Inactivo'}</span>
+      </div>
+      <div class="channel-param"><span class="channel-param-key">Comisión</span><span class="channel-param-val">${ch.comision}%</span></div>
+      <div class="channel-param"><span class="channel-param-key">Factor precio lleno</span><span class="channel-param-val">${ch.factorPL}%</span></div>
+      <div class="channel-param"><span class="channel-param-key">Gasto almacén</span><span class="channel-param-val">${ch.baseGA==='colchon'?'Colchón':'C/IVA'} × ${ch.gaRate??3}%</span></div>
+      <div class="channel-param"><span class="channel-param-key">Maniobra</span><span class="channel-param-val">$${ch.maniobra}</span></div>
+      <div class="channel-param"><span class="channel-param-key">Envío</span><span class="channel-param-val">${ch.tipoEnvio==='guias'?'$'+ch.envio1+' / $'+ch.envio2:ch.tipoEnvio==='fijo'?'$'+ch.envioFijo:'Por tabla'}</span></div>
+      <div class="channel-param"><span class="channel-param-key">PSIC mínimo</span><span class="channel-param-val">${(ch.psicMin*100).toFixed(0)}%</span></div>
+      <div class="channel-card-actions">
+        <button class="btn btn-outline btn-sm" onclick="editarCanal('${ch.id}')">✏️ Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleCanal('${ch.id}')">${ch.activo?'Desactivar':'Activar'}</button>
+      </div>
+    </div>`).join('') + `
+    <div class="channel-card add-channel-card" onclick="abrirNuevoCanal()">
+      <div style="font-size:30px;color:var(--atlas-red)">+</div>
+      <span>Registrar nuevo canal</span>
+      <div style="font-size:11px;color:var(--text3);text-align:center">Amazon, Mercado Libre,<br>Coppel, Palacio de Hierro...</div>
+    </div>`;
+}
+
+function editarCanal(id) {
+  const ch = canales.find(c=>c.id===id);
+  if(!ch) return;
+  editingChannelId = id;
+  document.getElementById('modalCanalTitle').textContent = 'Editar canal: '+ch.nombre;
+  document.getElementById('mc-nombre').value = ch.nombre;
+  document.getElementById('mc-nombre').disabled = true;
+  document.getElementById('mc-comision').value = ch.comision;
+  document.getElementById('mc-factor').value = ch.factorPL;
+  document.getElementById('mc-tipoEnvio').value = ch.tipoEnvio;
+  document.getElementById('mc-envio1').value = ch.envio1||1738;
+  document.getElementById('mc-envio2').value = ch.envio2||3476;
+  document.getElementById('mc-envioFijo').value = ch.envioFijo||900;
+  document.getElementById('mc-baseGA').value = ch.baseGA;
+  document.getElementById('mc-gaRate').value = ch.gaRate ?? 3;
+  document.getElementById('mc-psic').value = ch.psicMin;
+  document.getElementById('mc-maniobra').value = ch.maniobra||116;
+  toggleEnvioFields();
+  openModal('modalCanal');
+}
+
+function abrirNuevoCanal() {
+  editingChannelId = null;
+  document.getElementById('modalCanalTitle').textContent = 'Nuevo canal';
+  document.getElementById('mc-nombre').disabled = false;
+  document.getElementById('mc-nombre').value = '';
+  document.getElementById('mc-comision').value = '';
+  document.getElementById('mc-factor').value = 75;
+  document.getElementById('mc-tipoEnvio').value = 'fijo';
+  document.getElementById('mc-envioFijo').value = 900;
+  document.getElementById('mc-baseGA').value = 'total';
+  document.getElementById('mc-gaRate').value = 3;
+  document.getElementById('mc-psic').value = -0.75;
+  document.getElementById('mc-maniobra').value = 116;
+  toggleEnvioFields();
+  openModal('modalCanal');
+}
+
+function guardarCanal() {
+  const nombre = document.getElementById('mc-nombre').value.trim();
+  if(!nombre){ alert('El nombre del canal es requerido'); return; }
+  const data = {
+    id: editingChannelId || nombre.toLowerCase().replace(/\s+/g,'-'),
+    nombre, activo: true,
+    comision: parseFloat(document.getElementById('mc-comision').value)||0,
+    factorPL: parseFloat(document.getElementById('mc-factor').value)||75,
+    tipoEnvio: document.getElementById('mc-tipoEnvio').value,
+    envio1: parseFloat(document.getElementById('mc-envio1').value)||1738,
+    envio2: parseFloat(document.getElementById('mc-envio2').value)||3476,
+    envioFijo: parseFloat(document.getElementById('mc-envioFijo').value)||900,
+    baseGA: document.getElementById('mc-baseGA').value,
+    gaRate: parseFloat(document.getElementById('mc-gaRate').value)||3,
+    psicMin: parseFloat(document.getElementById('mc-psic').value)||-0.75,
+    maniobra: parseFloat(document.getElementById('mc-maniobra').value)||116,
+  };
+  if(editingChannelId){
+    const idx = canales.findIndex(c=>c.id===editingChannelId);
+    if(idx>=0) canales[idx]={...canales[idx],...data};
+  } else {
+    if(canales.find(c=>c.id===data.id)){ alert('Ya existe un canal con ese nombre'); return; }
+    canales.push(data);
+  }
+  closeModal('modalCanal');
+  renderChannelCards();
+  buildChannelTabs();
+}
+
+function toggleCanal(id) {
+  const ch = canales.find(c=>c.id===id);
+  if(ch) ch.activo=!ch.activo;
+  renderChannelCards();
+  buildChannelTabs();
+}
+
+function toggleEnvioFields() {
+  const tipo = document.getElementById('mc-tipoEnvio').value;
+  document.getElementById('mc-guias-fields').classList.toggle('hidden', tipo!=='guias');
+  document.getElementById('mc-fijo-fields').classList.toggle('hidden', tipo!=='fijo');
+}
+
+/* =============================================
+   ADMIN: USUARIOS
+============================================= */
+function renderUsers() {
+  const body = document.getElementById('usersBody');
+  if(!body) return;
+  body.innerHTML = usuarios.map(u=>`
+    <tr>
+      <td><div class="flex gap-8">
+        <div class="user-av ${u.rol==='admin'?'av-admin':'av-kam'}">${initials(u.nombre)}</div>
+        <span style="font-weight:500">${u.nombre}</span>
+      </div></td>
+      <td style="color:var(--text2);font-size:12px">${u.email}</td>
+      <td style="font-size:12px;color:var(--text2)">${u.puesto||'—'}</td>
+      <td><span class="badge ${u.rol==='admin'?'badge-navy':'badge-red'}">${u.rol==='admin'?'Administrador':'Consultor KAM'}</span></td>
+      <td><span class="badge ${u.activo?'badge-success':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="abrirEditarUsuario('${u.id}')">Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="abrirResetPassword('${u.id}')">Contraseña</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleUser('${u.id}')">${u.activo?'Desactivar':'Activar'}</button>
+        ${u.id!==currentUser.id?`<button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="eliminarUsuario('${u.id}')">Eliminar</button>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+
+function openNewUserModal() {
+  document.getElementById('nu-nombre').value='';
+  document.getElementById('nu-email').value='';
+  document.getElementById('nu-rol').value='kam';
+  document.getElementById('nu-puesto').value='';
+  document.getElementById('nu-pass').value='';
+  document.getElementById('nuMsg').style.display='none';
+  openModal('modalNewUser');
+}
+
+async function guardarUsuario() {
+  const nombre = document.getElementById('nu-nombre').value.trim();
+  const email  = document.getElementById('nu-email').value.trim().toLowerCase();
+  const rol    = document.getElementById('nu-rol').value;
+  const puesto = rol==='admin' ? null : (document.getElementById('nu-puesto').value||null);
+  const pass   = document.getElementById('nu-pass').value;
+  const msgEl  = document.getElementById('nuMsg');
+
+  if(!nombre||!email||!pass){ msgEl.textContent='Completa todos los campos.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  if(pass.length<8){ msgEl.textContent='La contraseña debe tener mínimo 8 caracteres.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  if(usuarios.find(u=>u.email.toLowerCase()===email)){ msgEl.textContent='Ya existe un usuario con ese correo.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+
+  const salt = randHex(16);
+  const hash = await hashPassword(pass, salt);
+  usuarios.push({
+    id: 'u'+Date.now(), email, nombre, rol, puesto,
+    salt, hash, activo:true, creadoEn: new Date().toISOString()
+  });
+  saveUsuarios();
+  closeModal('modalNewUser');
+  renderUsers();
+}
+
+function abrirEditarUsuario(id) {
+  const u = usuarios.find(u=>u.id===id);
+  if(!u) return;
+  document.getElementById('eu-id').value = id;
+  document.getElementById('eu-nombre').value = u.nombre;
+  document.getElementById('eu-email').value = u.email;
+  document.getElementById('eu-rol').value = u.rol;
+  document.getElementById('eu-puesto').value = u.puesto||'';
+  document.getElementById('euMsg').style.display='none';
+  openModal('modalEditUser');
+}
+
+function guardarEdicionUsuario() {
+  const id     = document.getElementById('eu-id').value;
+  const nombre = document.getElementById('eu-nombre').value.trim();
+  const email  = document.getElementById('eu-email').value.trim().toLowerCase();
+  const rol    = document.getElementById('eu-rol').value;
+  const puesto = rol==='admin' ? null : (document.getElementById('eu-puesto').value||null);
+  const msgEl  = document.getElementById('euMsg');
+
+  if(!nombre||!email){ msgEl.textContent='Completa los campos requeridos.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  const dup = usuarios.find(u=>u.email.toLowerCase()===email && u.id!==id);
+  if(dup){ msgEl.textContent='Ya existe otro usuario con ese correo.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+
+  const u = usuarios.find(u=>u.id===id);
+  if(!u) return;
+  u.nombre=nombre; u.email=email; u.rol=rol; u.puesto=puesto;
+
+  // Si editamos el usuario actual, refrescar topbar
+  if(currentUser.id===id){ currentUser=u; initApp(); }
+  saveUsuarios();
+  closeModal('modalEditUser');
+  renderUsers();
+}
+
+function abrirResetPassword(id) {
+  const u = usuarios.find(u=>u.id===id);
+  if(!u) return;
+  document.getElementById('ru-id').value = id;
+  document.getElementById('resetUserName').textContent = u.nombre;
+  document.getElementById('ru-pass').value = '';
+  document.getElementById('ruMsg').style.display = 'none';
+  openModal('modalResetUser');
+}
+
+async function adminResetPassword() {
+  const id   = document.getElementById('ru-id').value;
+  const pass = document.getElementById('ru-pass').value;
+  const msgEl= document.getElementById('ruMsg');
+  if(pass.length<8){ msgEl.textContent='Mínimo 8 caracteres.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  const u = usuarios.find(u=>u.id===id);
+  if(!u) return;
+  const salt = randHex(16);
+  const hash = await hashPassword(pass, salt);
+  u.salt=salt; u.hash=hash;
+  saveUsuarios();
+  msgEl.textContent='Contraseña actualizada correctamente.'; msgEl.style.color='var(--success)'; msgEl.style.display='block';
+  setTimeout(()=>closeModal('modalResetUser'), 1500);
+}
+
+function toggleUser(id) {
+  const u = usuarios.find(u=>u.id===id);
+  if(u && u.id!==currentUser.id){ u.activo=!u.activo; saveUsuarios(); }
+  renderUsers();
+}
+
+function eliminarUsuario(id) {
+  if(id===currentUser.id) return;
+  if(!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+  usuarios = usuarios.filter(u=>u.id!==id);
+  _db.collection(_COLL).doc(id).delete().catch(e => console.error('Error eliminando usuario:', e));
+  renderUsers();
+}
+
+/* =============================================
+   PERFIL DE USUARIO
+============================================= */
+function loadPerfil() {
+  if(!currentUser) return;
+  document.getElementById('prof-nombre').value = currentUser.nombre;
+  document.getElementById('prof-email').value  = currentUser.email;
+  document.getElementById('prof-puesto').value = currentUser.puesto||'—';
+  document.getElementById('prof-rol').value    = currentUser.rol==='admin'?'Administrador':'Consultor KAM';
+  document.getElementById('prof-passOld').value='';
+  document.getElementById('prof-passNew').value='';
+  document.getElementById('prof-passNew2').value='';
+  document.getElementById('profInfoMsg').style.display='none';
+  document.getElementById('profPassMsg').style.display='none';
+}
+
+function guardarPerfil() {
+  const nombre  = document.getElementById('prof-nombre').value.trim();
+  const email   = document.getElementById('prof-email').value.trim().toLowerCase();
+  const msgEl   = document.getElementById('profInfoMsg');
+  if(!nombre||!email){ msgEl.textContent='Completa los campos.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  const dup = usuarios.find(u=>u.email.toLowerCase()===email && u.id!==currentUser.id);
+  if(dup){ msgEl.textContent='Ese correo ya está en uso.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  currentUser.nombre=nombre; currentUser.email=email;
+  saveUsuarios();
+  document.getElementById('tbUsername').textContent=nombre;
+  document.getElementById('tbAvatar').textContent=initials(nombre);
+  msgEl.textContent='Información actualizada.'; msgEl.style.color='var(--success)'; msgEl.style.display='block';
+}
+
+async function cambiarContrasena() {
+  const passOld  = document.getElementById('prof-passOld').value;
+  const passNew  = document.getElementById('prof-passNew').value;
+  const passNew2 = document.getElementById('prof-passNew2').value;
+  const msgEl    = document.getElementById('profPassMsg');
+  if(!passOld||!passNew||!passNew2){ msgEl.textContent='Completa todos los campos.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  if(passNew.length<8){ msgEl.textContent='La nueva contraseña debe tener al menos 8 caracteres.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  if(passNew!==passNew2){ msgEl.textContent='Las contraseñas no coinciden.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  const ok = await verifyPassword(passOld, currentUser.salt, currentUser.hash);
+  if(!ok){ msgEl.textContent='La contraseña actual es incorrecta.'; msgEl.style.color='var(--danger)'; msgEl.style.display='block'; return; }
+  const salt = randHex(16);
+  const hash = await hashPassword(passNew, salt);
+  currentUser.salt=salt; currentUser.hash=hash;
+  saveUsuarios();
+  document.getElementById('prof-passOld').value='';
+  document.getElementById('prof-passNew').value='';
+  document.getElementById('prof-passNew2').value='';
+  msgEl.textContent='Contraseña actualizada correctamente.'; msgEl.style.color='var(--success)'; msgEl.style.display='block';
+}
+
+/* =============================================
+   DASHBOARD
+============================================= */
+async function updateDashMetrics() {
+  try {
+    let query = _db.collection('cotizaciones');
+    if (currentUser.rol !== 'admin') query = query.where('userId', '==', currentUser.id);
+    const snap = await query.get();
+    const docs = snap.docs.map(d => d.data());
+    const total = docs.length;
+    const liv = docs.filter(d => d.canalId === 'liverpool').length;
+    const otros = docs.filter(d => d.canalId !== 'liverpool').length;
+    const pend = docs.filter(d => d.autorizada === false).length;
+    const t = total || 1;
+    document.getElementById('m-total').textContent = total;
+    document.getElementById('m-liv').textContent = liv;
+    document.getElementById('m-mkp').textContent = otros;
+    document.getElementById('m-pdf').textContent = pend;
+    document.getElementById('m-liv-pct').textContent = Math.round(liv/t*100)+'% del total';
+    document.getElementById('m-mkp-pct').textContent = Math.round(otros/t*100)+'% del total';
+    document.getElementById('mb-total').style.width = Math.min(total*5,100)+'%';
+    document.getElementById('mb-liv').style.width = Math.round(liv/t*100)+'%';
+    document.getElementById('mb-mkp').style.width = Math.round(otros/t*100)+'%';
+  } catch(e) { console.error('updateDashMetrics:', e); }
+}
+
+function updateDashboard() {
+  updateDashMetrics();
+  const usersEl = document.getElementById('dashUsers');
+  if(usersEl) usersEl.innerHTML = usuarios.map(u=>`
+    <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div class="flex gap-8">
+        <div class="user-av ${u.rol==='admin'?'av-admin':'av-kam'}" style="width:28px;height:28px;font-size:10px">${initials(u.nombre)}</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">${u.nombre}</div>
+          <div style="font-size:11px;color:var(--text3)">${u.email}</div>
+        </div>
+      </div>
+      <span class="badge ${u.rol==='admin'?'badge-navy':'badge-red'} badge-sm">${u.rol==='admin'?'Admin':'KAM'}</span>
+    </div>`).join('');
+
+  const qa = document.getElementById('dashQuickAccess');
+  if(qa) qa.innerHTML = [
+    {icon:'⚡',label:'Cotizar ahora',action:"navigateTo('cotizador')"},
+    {icon:'↻',label:'Sync catálogo',action:'syncSheet()'},
+    {icon:'🏪',label:'Canales',action:"navigateTo('canales')"},
+    {icon:'👥',label:'Usuarios',action:"navigateTo('usuarios')"},
+    {icon:'📊',label:'Dashboard',action:"navigateTo('dashboard')"},
+    {icon:'📄',label:'Firmas pendientes',action:''},
+  ].map(q=>`
+    <div onclick="${q.action}" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+      padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s"
+      onmouseover="this.style.borderColor='var(--atlas-navy)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:20px;margin-bottom:4px">${q.icon}</div>
+      <div style="font-size:11px;font-weight:500;color:var(--text2)">${q.label}</div>
+    </div>`).join('');
+}
+
+async function syncSheet() {
+  await loadSheetData(); // ya llama loadEnvioData internamente
+  updateChannelParamUI('ind');
+  updateChannelParamUI('mas');
+  alert(`✅ Sincronizado\nCostos: ${Object.keys(bundleMap).length} bundles · ${sheetData.length} componentes\nEnvíos: ${envioData.length} tipos`);
+}
+
+/* =============================================
+   MODAL HELPERS
+============================================= */
+function openModal(id){ document.getElementById(id).classList.add('open') }
+function closeModal(id){ document.getElementById(id).classList.remove('open') }
+
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
+});
+
+window.onload = async () => {
+  await loadUsuarios();
+  checkResetHash();
+  // Restaurar sesión y página si el usuario ya había iniciado sesión
+  const savedUid = sessionStorage.getItem('atlas_uid');
+  if (savedUid && !location.hash.startsWith('#reset=')) {
+    const saved = usuarios.find(u => u.id === savedUid && u.activo !== false);
+    if (saved) {
+      currentUser = saved;
+      document.getElementById('loginScreen').style.display = 'none';
+      initApp();
+      const savedPage = sessionStorage.getItem('atlas_page');
+      if (savedPage) navigateTo(savedPage);
+    }
+  }
+};
+</script>
+
+<!-- ===== MODAL: VER COTIZACIÓN ===== -->
+<div id="cotizacionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:2rem 1rem">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:900px;box-shadow:0 24px 80px rgba(0,0,0,0.35);margin:auto">
+    <div style="padding:1.5rem 1.75rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:var(--atlas-navy)" id="cmTitulo">Cotización</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px" id="cmMeta">—</div>
+      </div>
+      <button onclick="cerrarCotizacionModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1">×</button>
+    </div>
+    <div style="padding:1.5rem 1.75rem">
+      <div class="table-wrap" style="border:1px solid var(--border);border-radius:10px;margin-bottom:1.25rem">
+        <table>
+          <thead><tr><th>SKU</th><th>Descripción</th><th class="right">Precio venta</th><th class="right">Precio lleno</th><th class="right">Utilidad</th><th>PSIC</th><th>Estado</th></tr></thead>
+          <tbody id="cmItems"></tbody>
+        </table>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--atlas-navy);margin-bottom:4px">Autorización</div>
+          <div style="font-size:12px;color:var(--text3)">Al marcar como autorizada, la cotización queda registrada en el historial como aprobada.</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;margin-left:2rem">
+          <input type="checkbox" id="cmAutorizada" onchange="toggleAutorizacion()" style="width:18px;height:18px;cursor:pointer">
+          <span style="font-size:13px;font-weight:600" id="cmAutorizadaLabel">Sin autorizar</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
