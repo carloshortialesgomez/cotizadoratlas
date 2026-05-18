@@ -758,14 +758,41 @@ td.center{text-align:center}
       </select>
     </div>
     <div id="mc-guias-fields">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:6px">Tarifas de envío por guías</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px">
+        <thead>
+          <tr style="color:var(--text3)">
+            <th style="text-align:left;padding:4px 6px;font-weight:600">Condición</th>
+            <th style="text-align:right;padding:4px 6px;font-weight:600">Umbral costo fijo</th>
+            <th style="text-align:right;padding:4px 6px;font-weight:600">Tarifa envío $</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:5px 6px;color:var(--text2)">Si costo fijo <strong>&lt;</strong></td>
+            <td style="padding:5px 6px;text-align:right"><input class="input input-sm" type="number" id="mc-umbral1" value="2631" style="width:90px;text-align:right"></td>
+            <td style="padding:5px 6px;text-align:right"><input class="input input-sm" type="number" id="mc-tarifa1" value="1250" style="width:90px;text-align:right"></td>
+          </tr>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:5px 6px;color:var(--text2)">Si costo fijo <strong>&gt;</strong></td>
+            <td style="padding:5px 6px;text-align:right"><input class="input input-sm" type="number" id="mc-umbral2" value="5263" style="width:90px;text-align:right"></td>
+            <td style="padding:5px 6px;text-align:right"><input class="input input-sm" type="number" id="mc-tarifa2" value="2500" style="width:90px;text-align:right"></td>
+          </tr>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:5px 6px;color:var(--text2)">Si ninguna se cumple</td>
+            <td style="padding:5px 6px;text-align:right;color:var(--text3)">—</td>
+            <td style="padding:5px 6px;text-align:right"><input class="input input-sm" type="number" id="mc-tarifaBase" value="1738" style="width:90px;text-align:right"></td>
+          </tr>
+        </tbody>
+      </table>
       <div class="field-row">
         <div class="field">
-          <label class="field-label">Envío 1 guía $</label>
-          <input class="input" type="number" id="mc-envio1" value="1738">
+          <label class="field-label">Factor 1 guía</label>
+          <input class="input" type="number" id="mc-factorGuia1" value="1.5" step="0.1" min="1">
         </div>
         <div class="field">
-          <label class="field-label">Envío 2 guías $</label>
-          <input class="input" type="number" id="mc-envio2" value="3476">
+          <label class="field-label" style="color:var(--text3)">2+ guías</label>
+          <div class="input" style="background:var(--surface2);color:var(--text3);cursor:default">× número de guías</div>
         </div>
       </div>
     </div>
@@ -1373,7 +1400,8 @@ let canales = [
   {
     id:'liverpool', nombre:'Liverpool', activo:true,
     comision:23, factorPL:75, psicMin:-0.75,
-    tipoEnvio:'guias', envio1:1738, envio2:3476,
+    tipoEnvio:'guias',
+    umbral1:2631, umbral2:5263, tarifa1:1250, tarifa2:2500, tarifaBase:1738, factorGuia1:1.5,
     baseGA:'colchon', gaRate:3, maniobra:116
   },
   {
@@ -1897,9 +1925,11 @@ function calcularBundle(skuBundle, ch, margen, guias, envioOverride) {
     envio = envioOverride;
   } else if(ch.tipoEnvio==='guias') {
     const g = parseInt(guias)||1;
-    // Tarifa base por 1 guía según rango de costo
-    let tarifaBase = costoIva < 2455 ? 1250 : costoIva < 5063 ? 1738 : 2500;
-    envio = tarifaBase * g;
+    const u1 = ch.umbral1 ?? 2631, u2 = ch.umbral2 ?? 5263;
+    const t1 = ch.tarifa1 ?? 1250, t2 = ch.tarifa2 ?? 2500, tb = ch.tarifaBase ?? 1738;
+    const f1 = ch.factorGuia1 ?? 1.5;
+    const tarifa = costoFijo < u1 ? t1 : costoFijo > u2 ? t2 : tb;
+    envio = g === 1 ? tarifa * f1 : tarifa * g;
   } else {
     envio = ch.envioFijo || 900;
   }
@@ -2824,8 +2854,12 @@ function editarCanal(id) {
   document.getElementById('mc-comision').value = ch.comision;
   document.getElementById('mc-factor').value = ch.factorPL;
   document.getElementById('mc-tipoEnvio').value = ch.tipoEnvio;
-  document.getElementById('mc-envio1').value = ch.envio1||1738;
-  document.getElementById('mc-envio2').value = ch.envio2||3476;
+  document.getElementById('mc-umbral1').value = ch.umbral1 ?? 2631;
+  document.getElementById('mc-umbral2').value = ch.umbral2 ?? 5263;
+  document.getElementById('mc-tarifa1').value = ch.tarifa1 ?? 1250;
+  document.getElementById('mc-tarifa2').value = ch.tarifa2 ?? 2500;
+  document.getElementById('mc-tarifaBase').value = ch.tarifaBase ?? 1738;
+  document.getElementById('mc-factorGuia1').value = ch.factorGuia1 ?? 1.5;
   document.getElementById('mc-envioFijo').value = ch.envioFijo||900;
   document.getElementById('mc-baseGA').value = ch.baseGA;
   document.getElementById('mc-gaRate').value = ch.gaRate ?? 3;
@@ -2844,6 +2878,12 @@ function abrirNuevoCanal() {
   document.getElementById('mc-factor').value = 75;
   document.getElementById('mc-tipoEnvio').value = 'fijo';
   document.getElementById('mc-envioFijo').value = 900;
+  document.getElementById('mc-umbral1').value = 2631;
+  document.getElementById('mc-umbral2').value = 5263;
+  document.getElementById('mc-tarifa1').value = 1250;
+  document.getElementById('mc-tarifa2').value = 2500;
+  document.getElementById('mc-tarifaBase').value = 1738;
+  document.getElementById('mc-factorGuia1').value = 1.5;
   document.getElementById('mc-baseGA').value = 'total';
   document.getElementById('mc-gaRate').value = 3;
   document.getElementById('mc-psic').value = -0.75;
@@ -2861,8 +2901,12 @@ function guardarCanal() {
     comision: parseFloat(document.getElementById('mc-comision').value)||0,
     factorPL: parseFloat(document.getElementById('mc-factor').value)||75,
     tipoEnvio: document.getElementById('mc-tipoEnvio').value,
-    envio1: parseFloat(document.getElementById('mc-envio1').value)||1738,
-    envio2: parseFloat(document.getElementById('mc-envio2').value)||3476,
+    umbral1: parseFloat(document.getElementById('mc-umbral1').value)||2631,
+    umbral2: parseFloat(document.getElementById('mc-umbral2').value)||5263,
+    tarifa1: parseFloat(document.getElementById('mc-tarifa1').value)||1250,
+    tarifa2: parseFloat(document.getElementById('mc-tarifa2').value)||2500,
+    tarifaBase: parseFloat(document.getElementById('mc-tarifaBase').value)||1738,
+    factorGuia1: parseFloat(document.getElementById('mc-factorGuia1').value)||1.5,
     envioFijo: parseFloat(document.getElementById('mc-envioFijo').value)||900,
     baseGA: document.getElementById('mc-baseGA').value,
     gaRate: parseFloat(document.getElementById('mc-gaRate').value)||3,
