@@ -76,6 +76,11 @@ public/users.json
 downloads/
 public/downloads/
 
+# IDE y herramientas de desarrollo
+.idea/
+.claude/
+*.py
+
 # Sistema operativo
 .DS_Store
 Thumbs.db
