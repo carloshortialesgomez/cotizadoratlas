@@ -236,6 +236,8 @@ td.center{text-align:center}
 .user-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
 .av-admin{background:var(--atlas-navy-light);color:var(--atlas-navy)}
 .av-kam{background:var(--atlas-red-light);color:var(--atlas-red)}
+.av-comprador{background:#EDE9FE;color:#7B5CF6}
+.badge-purple{background:#EDE9FE;color:#7B5CF6}
 
 /* ====== ALERTS ====== */
 .alert{padding:10px 14px;border-radius:8px;font-size:12.5px;display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
@@ -348,7 +350,6 @@ td.center{text-align:center}
         <div class="page-sub" id="dashDate">Cargando...</div>
       </div>
       <div class="flex gap-8">
-        <button class="btn btn-outline btn-sm" onclick="syncSheet()">↻ Sincronizar catálogo</button>
         <button class="btn btn-outline btn-sm" onclick="descargarCatalogoCostos()">↓ Costos</button>
         <button class="btn btn-outline btn-sm" onclick="descargarCatalogoEnvios()">↓ Costos envío</button>
       </div>
@@ -379,7 +380,7 @@ td.center{text-align:center}
         <div class="metric-bar"><div class="metric-fill" style="background:var(--atlas-red)" id="mb-pdf"></div></div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem">
       <div class="card">
         <div class="card-title">
           <div class="card-title-icon">👥</div>Usuarios activos
@@ -392,6 +393,12 @@ td.center{text-align:center}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="dashQuickAccess"></div>
       </div>
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-icon">📦</div>Última actualización catálogos
+        </div>
+        <div id="dashCatalogoMeta"><div style="color:var(--text3);font-size:13px">Cargando...</div></div>
+      </div>
     </div>
   </div>
 
@@ -399,7 +406,7 @@ td.center{text-align:center}
   <div class="page" id="page-cotizador">
     <div class="page-header">
       <div class="page-title">Cotizador</div>
-      <div class="page-sub">Individual y masivo · Lee costos en vivo desde Google Sheets</div>
+      <div class="page-sub">Individual y masivo · Costos cargados desde catálogo</div>
     </div>
 
     <!-- Sub tabs -->
@@ -724,6 +731,128 @@ td.center{text-align:center}
         <button class="btn btn-primary" style="margin-top:8px" onclick="cambiarContrasena()">Actualizar contraseña</button>
       </div>
     </div>
+    </div>
+
+  <!-- ===== PAGE: CATÁLOGOS ===== -->
+  <div class="page" id="page-catalogos">
+    <div class="page-header">
+      <div class="page-title">Catálogos</div>
+      <div class="page-sub">Gestión de costos de bundles y envíos</div>
+    </div>
+    <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:1.25rem;width:fit-content">
+      <button class="btn btn-primary btn-sm" id="catTab-bundles" onclick="showCatTab('bundles')">Catálogo Bundles</button>
+      <button class="btn btn-ghost btn-sm" id="catTab-envios" onclick="showCatTab('envios')">Catálogo Envíos</button>
+    </div>
+
+    <!-- Bundles tab -->
+    <div id="catView-bundles">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">📤</div>Carga masiva desde Excel</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
+            Sube un <strong>.xlsx</strong> con columnas: <strong>SKU_Bundle · SKU_Componente · Descripcion · Cantidad · Costo</strong>
+          </p>
+          <div id="bundleDropZone" style="border:2px dashed var(--border2);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s"
+               onclick="document.getElementById('bundleFileInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--atlas-red)'"
+               ondragleave="this.style.borderColor='var(--border2)'"
+               ondrop="handleBundleDrop(event)">
+            <div style="font-size:2rem;margin-bottom:8px">📁</div>
+            <div style="font-size:13px;color:var(--text3)">Haz clic o arrastra tu archivo .xlsx aquí</div>
+          </div>
+          <input type="file" id="bundleFileInput" accept=".xlsx,.xls" style="display:none" onchange="processBundlesFile(this.files[0])">
+          <div id="bundleUploadMsg" style="font-size:12px;margin-top:8px;display:none"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="descargarTemplateBundles()">↓ Descargar plantilla</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">✏️</div>Alta manual de componente</div>
+          <div class="field">
+            <label class="field-label">SKU Bundle</label>
+            <input class="input" id="mb-skuBundle" placeholder="ej. 200401401AP">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">SKU Componente</label>
+              <input class="input" id="mb-skuComp" placeholder="ej. 200401401">
+            </div>
+            <div class="field" style="max-width:100px">
+              <label class="field-label">Cantidad</label>
+              <input class="input" type="number" id="mb-cantidad" value="1" min="0.01" step="0.01">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Descripción</label>
+            <input class="input" id="mb-desc" placeholder="ej. COLCHON AMERICA MIAMI IND">
+          </div>
+          <div class="field">
+            <label class="field-label">Costo $</label>
+            <input class="input" type="number" id="mb-costo" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div id="mbMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+          <button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="guardarBundleManual()">Guardar componente</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:13px;font-weight:600" id="bundleCountLabel">— bundles · — componentes</div>
+          <input class="input" id="bundleSearch" placeholder="Buscar SKU o descripción..." oninput="renderCatalogoBundlesTable()" style="width:240px">
+        </div>
+        <div class="table-wrap" style="border:none;max-height:420px;overflow-y:auto">
+          <table>
+            <thead><tr><th>SKU Bundle</th><th>SKU Comp.</th><th>Descripción</th><th class="right">Cant.</th><th class="right">Costo</th><th></th></tr></thead>
+            <tbody id="bundlesTableBody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Envíos tab -->
+    <div id="catView-envios" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">📤</div>Carga masiva desde Excel</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
+            Sube un <strong>.xlsx</strong> con columnas: <strong>Tipo · Costo</strong>
+          </p>
+          <div id="envioDropZone" style="border:2px dashed var(--border2);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s"
+               onclick="document.getElementById('envioFileInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--atlas-red)'"
+               ondragleave="this.style.borderColor='var(--border2)'"
+               ondrop="handleEnvioDrop(event)">
+            <div style="font-size:2rem;margin-bottom:8px">📁</div>
+            <div style="font-size:13px;color:var(--text3)">Haz clic o arrastra tu archivo .xlsx aquí</div>
+          </div>
+          <input type="file" id="envioFileInput" accept=".xlsx,.xls" style="display:none" onchange="procesarEnviosFile(this.files[0])">
+          <div id="envioUploadMsg" style="font-size:12px;margin-top:8px;display:none"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="descargarTemplateEnvios()">↓ Descargar plantilla</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">✏️</div>Alta manual de tipo de envío</div>
+          <div class="field">
+            <label class="field-label">Tipo de envío</label>
+            <input class="input" id="me-tipo" placeholder="ej. Paquete pequeño">
+          </div>
+          <div class="field">
+            <label class="field-label">Costo $</label>
+            <input class="input" type="number" id="me-costo" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div id="meMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+          <button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="guardarEnvioManual()">Guardar tipo de envío</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:13px;font-weight:600" id="envioCountLabel">— tipos de envío</div>
+          <input class="input" id="envioSearch" placeholder="Buscar tipo..." oninput="renderCatalogoEnviosTable()" style="width:240px">
+        </div>
+        <div class="table-wrap" style="border:none;max-height:420px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Tipo</th><th class="right">Costo</th><th></th></tr></thead>
+            <tbody id="enviosTableBody"><tr><td colspan="3" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div><!-- /app-body -->
@@ -850,6 +979,7 @@ td.center{text-align:center}
       <select class="input" id="nu-rol">
         <option value="admin">Administrador</option>
         <option value="kam" selected>Consultor KAM</option>
+        <option value="comprador">Comprador</option>
       </select>
     </div>
     <div class="field">
@@ -893,6 +1023,7 @@ td.center{text-align:center}
       <select class="input" id="eu-rol">
         <option value="admin">Administrador</option>
         <option value="kam">Consultor KAM</option>
+        <option value="comprador">Comprador</option>
       </select>
     </div>
     <div class="field">
@@ -938,7 +1069,6 @@ td.center{text-align:center}
 /* =============================================
    ESTADO GLOBAL
 ============================================= */
-const SHEET_ID = '1Fd-YUZwUtftJt6nzM5PX1IydKpcxGZLz0qZ6nH9WmOQ';
 const GASTO_MANIOBRA = 116;
 const COSTO_BOLSA = { individual: 60.18, matrimonial: 65.49, queen: 74.34, king: 94.40 };
 
@@ -1597,9 +1727,9 @@ function initApp() {
 
   const av = document.getElementById('tbAvatar');
   av.textContent = initials(currentUser.nombre);
-  av.style.background = currentUser.rol==='admin'?'var(--atlas-red)':'#2D7D3A';
+  av.style.background = currentUser.rol==='admin' ? 'var(--atlas-red)' : currentUser.rol==='comprador' ? '#7B5CF6' : '#2D7D3A';
   document.getElementById('tbUsername').textContent = currentUser.nombre;
-  document.getElementById('tbRole').textContent = currentUser.rol==='admin'?'Administrador':'Consultor KAM';
+  document.getElementById('tbRole').textContent = currentUser.rol==='admin' ? 'Administrador' : currentUser.rol==='comprador' ? 'Comprador' : 'Consultor KAM';
 
   buildNav();
   buildChannelTabs();
@@ -1611,18 +1741,19 @@ function initApp() {
   document.getElementById('dashDate').textContent =
     now.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  navigateTo(currentUser.rol==='admin' ? 'dashboard' : 'cotizador');
-  loadSheetData();
+  navigateTo(currentUser.rol==='admin' ? 'dashboard' : currentUser.rol==='comprador' ? 'catalogos' : 'cotizador');
+  loadCatalogos();
 }
 
 function buildNav() {
   const nav = document.getElementById('mainNav');
   const pages = [
-    {id:'dashboard', label:'Dashboard', icon:'📊', roles:['admin']},
-    {id:'cotizador', label:'Cotizador', icon:'⚡', roles:['admin','kam']},
-    {id:'historial', label:'Historial', icon:'📋', roles:['admin','kam']},
-    {id:'canales', label:'Canales', icon:'🏪', roles:['admin']},
-    {id:'usuarios', label:'Usuarios', icon:'👥', roles:['admin']},
+    {id:'dashboard',  label:'Dashboard',  icon:'📊', roles:['admin']},
+    {id:'cotizador',  label:'Cotizador',  icon:'⚡', roles:['admin','kam']},
+    {id:'historial',  label:'Historial',  icon:'📋', roles:['admin','kam']},
+    {id:'catalogos',  label:'Catálogos',  icon:'📦', roles:['admin','comprador']},
+    {id:'canales',    label:'Canales',    icon:'🏪', roles:['admin']},
+    {id:'usuarios',   label:'Usuarios',   icon:'👥', roles:['admin']},
   ];
   nav.innerHTML = '';
   pages.filter(p=>p.roles.includes(currentUser.rol)).forEach(p=>{
@@ -1645,6 +1776,7 @@ function navigateTo(pageId) {
   if(pageId==='cotizador' && currentUser.rol==='kam') showSubtab('individual');
   if(pageId==='perfil') loadPerfil();
   if(pageId==='historial') loadHistorial();
+  if(pageId==='catalogos') showCatTab('bundles');
   sessionStorage.setItem('atlas_page', pageId);
 }
 
@@ -1656,43 +1788,320 @@ const EMAILJS_TEMPLATE_ID = 'template_abs07iy';
 const EMAILJS_PUBLIC_KEY  = 'PjT52wA-rrrMY0rY0';
 
 /* =============================================
-   GOOGLE SHEETS — lectura en vivo
+   CATÁLOGOS — Firestore
 ============================================= */
-async function loadSheetData() {
+let _catalogoMeta = { bundles: null, envios: null };
+
+async function loadCatalogos() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1&_=${Date.now()}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    sheetData = parseCSV(text);
+    const bundlesSnap = await _db.collection('catalogoBundles').get();
+    if (!bundlesSnap.empty) {
+      sheetData = bundlesSnap.docs.map(d => d.data());
+    } else {
+      loadDemoData();
+    }
     buildBundleMap();
-    console.log(`✅ Catálogo cargado: ${Object.keys(bundleMap).length} bundles únicos`);
+    console.log(`✅ Bundles: ${Object.keys(bundleMap).length} bundles`);
   } catch(e) {
-    console.warn('Sheet no disponible, usando modo demo:', e);
+    console.warn('Error cargando bundles, usando demo:', e);
     loadDemoData();
   }
-  await loadEnvioData();
-}
-
-async function loadEnvioData() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Costoenvios&_=${Date.now()}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const lines = text.split('\n').filter(l=>l.trim());
-    envioData = [];
-    for(let i=1; i<lines.length; i++){
-      const cols = parseCSVLine(lines[i]);
-      if(cols[0]) envioData.push({ tipo: cols[0].trim(), costo: parseCosto(cols[1]) });
-    }
+    const enviosSnap = await _db.collection('catalogoEnvios').get();
+    envioData = enviosSnap.docs.map(d => d.data());
     envioMap = {};
     envioData.forEach(r => { envioMap[r.tipo.toUpperCase()] = r.costo; });
-    console.log(`✅ Costos de envío cargados: ${envioData.length} tipos`);
+    console.log(`✅ Envíos: ${envioData.length} tipos`);
     populateEnvioDropdowns();
   } catch(e) {
-    console.warn('Costoenvios no disponible:', e);
+    console.warn('Error cargando envíos:', e);
   }
+  await loadCatalogoMeta();
+}
+
+async function loadCatalogoMeta() {
+  try {
+    const bMeta = await _db.collection('catalogoMeta').doc('bundles').get();
+    const eMeta = await _db.collection('catalogoMeta').doc('envios').get();
+    _catalogoMeta.bundles = bMeta.exists ? bMeta.data() : null;
+    _catalogoMeta.envios  = eMeta.exists ? eMeta.data() : null;
+    renderCatalogoMetaDash();
+  } catch(e) { console.warn('Error cargando meta:', e); }
+}
+
+function renderCatalogoMetaDash() {
+  const el = document.getElementById('dashCatalogoMeta');
+  if (!el) return;
+  function fmtMeta(m) {
+    if (!m) return '<span style="color:var(--text3)">Sin datos cargados</span>';
+    const d = m.updatedAt?.toDate ? m.updatedAt.toDate() : new Date(m.updatedAt);
+    return `${d.toLocaleDateString('es-MX')} · ${m.updatedBy ?? '—'} · ${(m.count ?? 0).toLocaleString()} reg.`;
+  }
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Bundles</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:2px">${fmtMeta(_catalogoMeta.bundles)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Envíos</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:2px">${fmtMeta(_catalogoMeta.envios)}</div>
+      </div>
+    </div>`;
+}
+
+function showCatTab(tab) {
+  ['bundles','envios'].forEach(t => {
+    document.getElementById(`catView-${t}`).style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById(`catTab-${t}`);
+    if (btn) btn.className = t === tab ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  });
+  if (tab === 'bundles') renderCatalogoBundlesTable();
+  else renderCatalogoEnviosTable();
+}
+
+function renderCatalogoBundlesTable() {
+  const q = (document.getElementById('bundleSearch')?.value ?? '').toUpperCase();
+  const rows = sheetData.filter(r =>
+    !q || (r.bundle??'').toUpperCase().includes(q) ||
+          (r.componente??'').toUpperCase().includes(q) ||
+          (r.descripcion??'').toUpperCase().includes(q)
+  );
+  const uniqueBundles = new Set(rows.map(r => r.bundle)).size;
+  const label = document.getElementById('bundleCountLabel');
+  if (label) label.textContent = `${uniqueBundles} bundles · ${rows.length} componentes`;
+  const tbody = document.getElementById('bundlesTableBody');
+  if (!tbody) return;
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
+  tbody.innerHTML = rows.slice(0, 300).map(r => `
+    <tr>
+      <td><span class="badge">${r.bundle ?? ''}</span></td>
+      <td style="color:var(--text3);font-size:12px">${r.componente ?? ''}</td>
+      <td>${r.descripcion ?? ''}</td>
+      <td class="right">${r.cantidad ?? 1}</td>
+      <td class="right">$${(r.costo ?? 0).toLocaleString('es-MX')}</td>
+      <td style="text-align:center"><button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:2px 8px" onclick="eliminarBundleRow('${r._docId ?? ''}')">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderCatalogoEnviosTable() {
+  const q = (document.getElementById('envioSearch')?.value ?? '').toUpperCase();
+  const rows = envioData.filter(r => !q || (r.tipo ?? '').toUpperCase().includes(q));
+  const label = document.getElementById('envioCountLabel');
+  if (label) label.textContent = `${rows.length} tipos de envío`;
+  const tbody = document.getElementById('enviosTableBody');
+  if (!tbody) return;
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.tipo ?? ''}</td>
+      <td class="right">$${(r.costo ?? 0).toLocaleString('es-MX')}</td>
+      <td style="text-align:center"><button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:2px 8px" onclick="eliminarEnvioRow('${r._docId ?? ''}')">✕</button></td>
+    </tr>`).join('');
+}
+
+function descargarTemplateBundles() {
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['SKU_Bundle','SKU_Componente','Descripcion','Cantidad','Costo'],
+    ['200401401AP','200401401','COLCHON AMERICA MIAMI IND',1,3200],
+    ['200401401AP','24131141','ALMOHADAS BASIC ATLAS 2 PACK',1,280],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [20,20,40,10,12].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Bundles');
+  XLSX.writeFile(wb, 'Plantilla_Bundles.xlsx');
+}
+
+function descargarTemplateEnvios() {
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['Tipo','Costo'],
+    ['Paquete pequeño',150],
+    ['Paquete mediano',250],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [30,12].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Envios');
+  XLSX.writeFile(wb, 'Plantilla_Envios.xlsx');
+}
+
+function handleBundleDrop(event) {
+  event.preventDefault();
+  document.getElementById('bundleDropZone').style.borderColor = 'var(--border2)';
+  const file = event.dataTransfer.files[0];
+  if (file) processBundlesFile(file);
+}
+
+function handleEnvioDrop(event) {
+  event.preventDefault();
+  document.getElementById('envioDropZone').style.borderColor = 'var(--border2)';
+  const file = event.dataTransfer.files[0];
+  if (file) procesarEnviosFile(file);
+}
+
+async function processBundlesFile(file) {
+  if (!file) return;
+  const msgEl = document.getElementById('bundleUploadMsg');
+  msgEl.style.display = 'block'; msgEl.style.color = 'var(--text2)'; msgEl.textContent = 'Procesando archivo...';
+  try {
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!rows.length) throw new Error('El archivo está vacío');
+    const normalized = rows.map(r => {
+      const key = k => Object.keys(r).find(x => x.toUpperCase().replace(/[^A-Z]/g,'').includes(k)) ?? '';
+      return {
+        bundle:      String(r[key('BUNDLE')] || r[key('SKUB')] || '').trim(),
+        componente:  String(r[key('COMPON')] || r[key('SKUC')] || '').trim(),
+        descripcion: String(r[key('DESC')] || '').trim(),
+        cantidad:    parseFloat(String(r[key('CANT')] || '').replace(',','')) || 1,
+        costo:       parseCosto(r[key('COSTO')] || r[key('COST')] || 0),
+      };
+    }).filter(r => r.bundle && r.componente);
+    if (!normalized.length) throw new Error('No se encontraron filas válidas (SKU_Bundle y SKU_Componente son requeridos)');
+    msgEl.textContent = `Cargando ${normalized.length} filas a Firestore...`;
+    await upsertBundlesBatch(normalized);
+    msgEl.style.color = 'var(--success)'; msgEl.textContent = `✅ ${normalized.length} componentes cargados correctamente`;
+    document.getElementById('bundleFileInput').value = '';
+    renderCatalogoBundlesTable();
+  } catch(e) {
+    msgEl.style.color = 'var(--danger)'; msgEl.textContent = `Error: ${e.message}`;
+  }
+}
+
+async function procesarEnviosFile(file) {
+  if (!file) return;
+  const msgEl = document.getElementById('envioUploadMsg');
+  msgEl.style.display = 'block'; msgEl.style.color = 'var(--text2)'; msgEl.textContent = 'Procesando archivo...';
+  try {
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!rows.length) throw new Error('El archivo está vacío');
+    const normalized = rows.map(r => {
+      const key = k => Object.keys(r).find(x => x.toUpperCase().replace(/[^A-Z]/g,'').includes(k)) ?? '';
+      return {
+        tipo:  String(r[key('TIPO')] || '').trim(),
+        costo: parseCosto(r[key('COSTO')] || r[key('COST')] || 0),
+      };
+    }).filter(r => r.tipo);
+    if (!normalized.length) throw new Error('No se encontraron filas válidas (Tipo es requerido)');
+    msgEl.textContent = `Cargando ${normalized.length} tipos a Firestore...`;
+    await upsertEnviosBatch(normalized);
+    msgEl.style.color = 'var(--success)'; msgEl.textContent = `✅ ${normalized.length} tipos de envío cargados correctamente`;
+    document.getElementById('envioFileInput').value = '';
+    renderCatalogoEnviosTable();
+  } catch(e) {
+    msgEl.style.color = 'var(--danger)'; msgEl.textContent = `Error: ${e.message}`;
+  }
+}
+
+async function upsertBundlesBatch(rows) {
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = _db.batch();
+    rows.slice(i, i + BATCH_SIZE).forEach(r => {
+      const docId = `${r.bundle}__${r.componente}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+      batch.set(_db.collection('catalogoBundles').doc(docId), { ...r, _docId: docId }, { merge: true });
+    });
+    await batch.commit();
+  }
+  const snap = await _db.collection('catalogoBundles').get();
+  sheetData = snap.docs.map(d => d.data());
+  buildBundleMap();
+  const meta = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: sheetData.length };
+  await _db.collection('catalogoMeta').doc('bundles').set(meta);
+  _catalogoMeta.bundles = { ...meta, updatedAt: new Date() };
+  renderCatalogoMetaDash();
+}
+
+async function upsertEnviosBatch(rows) {
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = _db.batch();
+    rows.slice(i, i + BATCH_SIZE).forEach(r => {
+      const docId = r.tipo.toUpperCase().replace(/[^a-zA-Z0-9_-]/g, '_');
+      batch.set(_db.collection('catalogoEnvios').doc(docId), { ...r, _docId: docId }, { merge: true });
+    });
+    await batch.commit();
+  }
+  const snap = await _db.collection('catalogoEnvios').get();
+  envioData = snap.docs.map(d => d.data());
+  envioMap = {};
+  envioData.forEach(r => { envioMap[r.tipo.toUpperCase()] = r.costo; });
+  populateEnvioDropdowns();
+  const meta = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: envioData.length };
+  await _db.collection('catalogoMeta').doc('envios').set(meta);
+  _catalogoMeta.envios = { ...meta, updatedAt: new Date() };
+  renderCatalogoMetaDash();
+}
+
+async function guardarBundleManual() {
+  const bundle      = document.getElementById('mb-skuBundle').value.trim();
+  const componente  = document.getElementById('mb-skuComp').value.trim();
+  const descripcion = document.getElementById('mb-desc').value.trim();
+  const cantidad    = parseFloat(document.getElementById('mb-cantidad').value) || 1;
+  const costo       = parseCosto(document.getElementById('mb-costo').value);
+  const msgEl = document.getElementById('mbMsg');
+  if (!bundle || !componente) {
+    msgEl.style.display='block'; msgEl.style.color='var(--danger)'; msgEl.textContent='SKU Bundle y SKU Componente son requeridos'; return;
+  }
+  msgEl.style.display='block'; msgEl.style.color='var(--text2)'; msgEl.textContent='Guardando...';
+  try {
+    await upsertBundlesBatch([{ bundle, componente, descripcion, cantidad, costo }]);
+    msgEl.style.color='var(--success)'; msgEl.textContent='✅ Guardado correctamente';
+    ['mb-skuBundle','mb-skuComp','mb-desc','mb-costo'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('mb-cantidad').value='1';
+    renderCatalogoBundlesTable();
+  } catch(e) { msgEl.style.color='var(--danger)'; msgEl.textContent=`Error: ${e.message}`; }
+}
+
+async function guardarEnvioManual() {
+  const tipo  = document.getElementById('me-tipo').value.trim();
+  const costo = parseCosto(document.getElementById('me-costo').value);
+  const msgEl = document.getElementById('meMsg');
+  if (!tipo) {
+    msgEl.style.display='block'; msgEl.style.color='var(--danger)'; msgEl.textContent='El tipo de envío es requerido'; return;
+  }
+  msgEl.style.display='block'; msgEl.style.color='var(--text2)'; msgEl.textContent='Guardando...';
+  try {
+    await upsertEnviosBatch([{ tipo, costo }]);
+    msgEl.style.color='var(--success)'; msgEl.textContent='✅ Guardado correctamente';
+    document.getElementById('me-tipo').value=''; document.getElementById('me-costo').value='';
+    renderCatalogoEnviosTable();
+  } catch(e) { msgEl.style.color='var(--danger)'; msgEl.textContent=`Error: ${e.message}`; }
+}
+
+async function eliminarBundleRow(docId) {
+  if (!docId || !confirm('¿Eliminar este componente del catálogo?')) return;
+  try {
+    await _db.collection('catalogoBundles').doc(docId).delete();
+    sheetData = sheetData.filter(r => r._docId !== docId);
+    buildBundleMap();
+    await _db.collection('catalogoMeta').doc('bundles').set(
+      { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: sheetData.length },
+      { merge: true }
+    );
+    renderCatalogoBundlesTable();
+  } catch(e) { alert('No se pudo eliminar: ' + e.message); }
+}
+
+async function eliminarEnvioRow(docId) {
+  if (!docId || !confirm('¿Eliminar este tipo de envío?')) return;
+  try {
+    await _db.collection('catalogoEnvios').doc(docId).delete();
+    envioData = envioData.filter(r => r._docId !== docId);
+    envioMap = {};
+    envioData.forEach(r => { envioMap[r.tipo.toUpperCase()] = r.costo; });
+    await _db.collection('catalogoMeta').doc('envios').set(
+      { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: envioData.length },
+      { merge: true }
+    );
+    renderCatalogoEnviosTable();
+  } catch(e) { alert('No se pudo eliminar: ' + e.message); }
 }
 
 function populateEnvioDropdowns() {
@@ -2339,7 +2748,7 @@ function descargarPlantilla() {
 }
 
 function descargarCatalogoCostos() {
-  if(!sheetData.length){ alert('Primero sincroniza el catálogo'); return; }
+  if(!sheetData.length){ alert('El catálogo de bundles está vacío'); return; }
   const ws = XLSX.utils.json_to_sheet(sheetData.map(r=>({
     SKU_BUNDLE: r.bundle, CANTIDAD: r.cantidad, SKU_COMPONENTE: r.componente,
     DESCRIPCION: r.descripcion, COSTO_SIN_IVA: r.costo
@@ -2350,7 +2759,7 @@ function descargarCatalogoCostos() {
 }
 
 function descargarCatalogoEnvios() {
-  if(!envioData.length){ alert('Primero sincroniza el catálogo'); return; }
+  if(!envioData.length){ alert('El catálogo de envíos está vacío'); return; }
   const ws = XLSX.utils.json_to_sheet(envioData.map(r=>({ TIPO_ENVIO: r.tipo, COSTO_ENVIO: r.costo })));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'CostosEnvio');
@@ -2946,12 +3355,12 @@ function renderUsers() {
   body.innerHTML = usuarios.map(u=>`
     <tr>
       <td><div class="flex gap-8">
-        <div class="user-av ${u.rol==='admin'?'av-admin':'av-kam'}">${initials(u.nombre)}</div>
+        <div class="user-av ${u.rol==='admin'?'av-admin':u.rol==='comprador'?'av-comprador':'av-kam'}">${initials(u.nombre)}</div>
         <span style="font-weight:500">${u.nombre}</span>
       </div></td>
       <td style="color:var(--text2);font-size:12px">${u.email}</td>
       <td style="font-size:12px;color:var(--text2)">${u.puesto||'—'}</td>
-      <td><span class="badge ${u.rol==='admin'?'badge-navy':'badge-red'}">${u.rol==='admin'?'Administrador':'Consultor KAM'}</span></td>
+      <td><span class="badge ${u.rol==='admin'?'badge-navy':u.rol==='comprador'?'badge-purple':'badge-red'}">${u.rol==='admin'?'Administrador':u.rol==='comprador'?'Comprador':'Consultor KAM'}</span></td>
       <td><span class="badge ${u.activo?'badge-success':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="abrirEditarUsuario('${u.id}')">Editar</button>
@@ -3078,7 +3487,7 @@ function loadPerfil() {
   document.getElementById('prof-nombre').value = currentUser.nombre;
   document.getElementById('prof-email').value  = currentUser.email;
   document.getElementById('prof-puesto').value = currentUser.puesto||'—';
-  document.getElementById('prof-rol').value    = currentUser.rol==='admin'?'Administrador':'Consultor KAM';
+  document.getElementById('prof-rol').value    = currentUser.rol==='admin'?'Administrador':currentUser.rol==='comprador'?'Comprador':'Consultor KAM';
   document.getElementById('prof-passOld').value='';
   document.getElementById('prof-passNew').value='';
   document.getElementById('prof-passNew2').value='';
@@ -3152,19 +3561,19 @@ function updateDashboard() {
   if(usersEl) usersEl.innerHTML = usuarios.map(u=>`
     <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
       <div class="flex gap-8">
-        <div class="user-av ${u.rol==='admin'?'av-admin':'av-kam'}" style="width:28px;height:28px;font-size:10px">${initials(u.nombre)}</div>
+        <div class="user-av ${u.rol==='admin'?'av-admin':u.rol==='comprador'?'av-comprador':'av-kam'}" style="width:28px;height:28px;font-size:10px">${initials(u.nombre)}</div>
         <div>
           <div style="font-size:13px;font-weight:500">${u.nombre}</div>
           <div style="font-size:11px;color:var(--text3)">${u.email}</div>
         </div>
       </div>
-      <span class="badge ${u.rol==='admin'?'badge-navy':'badge-red'} badge-sm">${u.rol==='admin'?'Admin':'KAM'}</span>
+      <span class="badge ${u.rol==='admin'?'badge-navy':u.rol==='comprador'?'badge-purple':'badge-red'} badge-sm">${u.rol==='admin'?'Admin':u.rol==='comprador'?'Comprador':'KAM'}</span>
     </div>`).join('');
 
   const qa = document.getElementById('dashQuickAccess');
   if(qa) qa.innerHTML = [
     {icon:'⚡',label:'Cotizar ahora',action:"navigateTo('cotizador')"},
-    {icon:'↻',label:'Sync catálogo',action:'syncSheet()'},
+    {icon:'📦',label:'Catálogos',action:"navigateTo('catalogos')"},
     {icon:'🏪',label:'Canales',action:"navigateTo('canales')"},
     {icon:'👥',label:'Usuarios',action:"navigateTo('usuarios')"},
     {icon:'📊',label:'Dashboard',action:"navigateTo('dashboard')"},
@@ -3176,13 +3585,6 @@ function updateDashboard() {
       <div style="font-size:20px;margin-bottom:4px">${q.icon}</div>
       <div style="font-size:11px;font-weight:500;color:var(--text2)">${q.label}</div>
     </div>`).join('');
-}
-
-async function syncSheet() {
-  await loadSheetData(); // ya llama loadEnvioData internamente
-  updateChannelParamUI('ind');
-  updateChannelParamUI('mas');
-  alert(`✅ Sincronizado\nCostos: ${Object.keys(bundleMap).length} bundles · ${sheetData.length} componentes\nEnvíos: ${envioData.length} tipos`);
 }
 
 /* =============================================

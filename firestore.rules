@@ -7,6 +7,15 @@ service cloud.firestore {
     match /cotizaciones/{docId} {
       allow read, write: if true;
     }
+    match /catalogoBundles/{docId} {
+      allow read, write: if true;
+    }
+    match /catalogoEnvios/{docId} {
+      allow read, write: if true;
+    }
+    match /catalogoMeta/{docId} {
+      allow read, write: if true;
+    }
     match /{document=**} {
       allow read, write: if false;
     }
