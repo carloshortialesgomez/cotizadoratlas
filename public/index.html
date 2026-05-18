@@ -484,7 +484,7 @@ td.center{text-align:center}
                 <div class="price-display">
                   <div class="price-label">Precio de venta</div>
                   <div class="price-main" id="r-precioVenta">—</div>
-                  <div class="price-note">Termina en 9 · Redondeado automáticamente</div>
+                  <div class="price-note">Redondeado automáticamente</div>
                 </div>
                 <div class="calc-block" style="margin-top:0">
                   <div class="calc-row"><span>Precio lleno (factor <span id="r-factor-label">75%</span>)</span><span class="calc-val" id="r-precioLleno">—</span></div>
@@ -1942,8 +1942,7 @@ function calcularBundle(skuBundle, ch, margen, guias, envioOverride) {
   const comisRate = (ch.comision||0)/100;
   const margenRate = margen/100;
   const pvExacto = (costoFijo + envio) / (1 - margenRate - comisRate);
-  // Precio venta: redondear al número que termine en 9 más cercano
-  const precioVenta = Math.ceil(pvExacto / 10) * 10 - 1;
+  const precioVenta = Math.round(pvExacto);
   const precioOferta = pvExacto;
   const comision = precioVenta * comisRate;
   const totalGastos = costoFijo + comision + envio;
