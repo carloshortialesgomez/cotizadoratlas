@@ -2829,7 +2829,7 @@ function renderChannelCards() {
       <div class="channel-param"><span class="channel-param-key">Factor precio lleno</span><span class="channel-param-val">${ch.factorPL}%</span></div>
       <div class="channel-param"><span class="channel-param-key">Gasto almacén</span><span class="channel-param-val">${ch.baseGA==='colchon'?'Colchón':'C/IVA'} × ${ch.gaRate??3}%</span></div>
       <div class="channel-param"><span class="channel-param-key">Maniobra</span><span class="channel-param-val">$${ch.maniobra}</span></div>
-      <div class="channel-param"><span class="channel-param-key">Envío</span><span class="channel-param-val">${ch.tipoEnvio==='guias'?'$'+ch.envio1+' / $'+ch.envio2:ch.tipoEnvio==='fijo'?'$'+ch.envioFijo:'Por tabla'}</span></div>
+      <div class="channel-param"><span class="channel-param-key">Envío</span><span class="channel-param-val">${ch.tipoEnvio==='guias'?'Por número de guías':ch.tipoEnvio==='fijo'?'$'+ch.envioFijo:'Por tabla'}</span></div>
       <div class="channel-param"><span class="channel-param-key">PSIC mínimo</span><span class="channel-param-val">${(ch.psicMin*100).toFixed(0)}%</span></div>
       <div class="channel-card-actions">
         <button class="btn btn-outline btn-sm" onclick="editarCanal('${ch.id}')">✏️ Editar</button>
