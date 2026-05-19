@@ -10,6 +10,9 @@ service cloud.firestore {
     match /catalogoBundles/{docId} {
       allow read, write: if true;
     }
+    match /catalogoPrincipal/{docId} {
+      allow read, write: if true;
+    }
     match /catalogoEnvios/{docId} {
       allow read, write: if true;
     }

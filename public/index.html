@@ -740,8 +740,9 @@ td.center{text-align:center}
       <div class="page-sub">Gestión de costos de bundles y envíos</div>
     </div>
     <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:1.25rem;width:fit-content">
-      <button class="btn btn-primary btn-sm" id="catTab-bundles" onclick="showCatTab('bundles')">Catálogo Bundles</button>
-      <button class="btn btn-ghost btn-sm" id="catTab-envios" onclick="showCatTab('envios')">Catálogo Envíos</button>
+      <button class="btn btn-primary btn-sm" id="catTab-bundles" onclick="showCatTab('bundles')">Bundles</button>
+      <button class="btn btn-ghost btn-sm" id="catTab-principal" onclick="showCatTab('principal')">Catálogo principal</button>
+      <button class="btn btn-ghost btn-sm" id="catTab-envios" onclick="showCatTab('envios')">Envíos</button>
     </div>
 
     <!-- Bundles tab -->
@@ -781,12 +782,8 @@ td.center{text-align:center}
             </div>
           </div>
           <div class="field">
-            <label class="field-label">Descripción</label>
-            <input class="input" id="mb-desc" placeholder="ej. COLCHON AMERICA MIAMI IND">
-          </div>
-          <div class="field">
-            <label class="field-label">Costo $</label>
-            <input class="input" type="number" id="mb-costo" placeholder="0.00" min="0" step="0.01">
+            <label class="field-label">Descripción del bundle</label>
+            <input class="input" id="mb-desc" placeholder="ej. CONJUNTO MIAMI INDIVIDUAL + ACCESORIOS">
           </div>
           <div id="mbMsg" style="font-size:12px;margin-top:4px;display:none"></div>
           <button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="guardarBundleManual()">Guardar componente</button>
@@ -799,14 +796,81 @@ td.center{text-align:center}
         </div>
         <div class="table-wrap" style="border:none;max-height:420px;overflow-y:auto">
           <table>
-            <thead><tr><th>SKU Bundle</th><th>SKU Comp.</th><th>Descripción</th><th class="right">Cant.</th><th class="right">Costo</th><th></th></tr></thead>
-            <tbody id="bundlesTableBody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
+            <thead><tr><th>SKU Bundle</th><th>SKU Comp.</th><th>Desc. Bundle</th><th>Desc. Componente</th><th class="right">Cant.</th><th class="right">Costo</th><th></th></tr></thead>
+            <tbody id="bundlesTableBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
     <!-- Envíos tab -->
+    <!-- Catálogo Principal tab -->
+    <div id="catView-principal" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">📤</div>Carga masiva desde Excel</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
+            Sube un <strong>.xlsx</strong> con columnas: <strong>Articulo · Descripcion · Tipo · Estatus · UltimoCosto</strong><br>
+            <span style="font-size:11px;color:var(--text3)">Compatible con el archivo catalogo.xlsx generado por el sistema.</span>
+          </p>
+          <div id="principalDropZone" style="border:2px dashed var(--border2);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s"
+               onclick="document.getElementById('principalFileInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--atlas-red)'"
+               ondragleave="this.style.borderColor='var(--border2)'"
+               ondrop="handlePrincipalDrop(event)">
+            <div style="font-size:2rem;margin-bottom:8px">📁</div>
+            <div style="font-size:13px;color:var(--text3)">Haz clic o arrastra tu archivo .xlsx aquí</div>
+          </div>
+          <input type="file" id="principalFileInput" accept=".xlsx,.xls" style="display:none" onchange="procesarPrincipalFile(this.files[0])">
+          <div id="principalUploadMsg" style="font-size:12px;margin-top:8px;display:none"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="descargarTemplatePrincipal()">↓ Descargar plantilla</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">✏️</div>Alta/actualización manual</div>
+          <div class="field">
+            <label class="field-label">Artículo (SKU)</label>
+            <input class="input" id="mp-articulo" placeholder="ej. 200401401">
+          </div>
+          <div class="field">
+            <label class="field-label">Descripción</label>
+            <input class="input" id="mp-desc" placeholder="ej. COLCHON AMERICA MIAMI IND">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Tipo</label>
+              <input class="input" id="mp-tipo" value="Normal">
+            </div>
+            <div class="field">
+              <label class="field-label">Estatus</label>
+              <select class="input" id="mp-estatus">
+                <option value="ALTA">ALTA</option>
+                <option value="BLOQUEADO">BLOQUEADO</option>
+                <option value="DESCONTINUADO">DESCONTINUADO</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Último Costo $</label>
+            <input class="input" type="number" id="mp-costo" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div id="mpMsg" style="font-size:12px;margin-top:4px;display:none"></div>
+          <button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="guardarPrincipalManual()">Guardar artículo</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:13px;font-weight:600" id="principalCountLabel">— artículos</div>
+          <input class="input" id="principalSearch" placeholder="Buscar artículo o descripción..." oninput="renderCatalogoPrincipalTable()" style="width:260px">
+        </div>
+        <div class="table-wrap" style="border:none;max-height:420px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Artículo</th><th>Descripción</th><th>Estatus</th><th class="right">Último Costo</th><th></th></tr></thead>
+            <tbody id="principalTableBody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div id="catView-envios" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
         <div class="card">
@@ -1086,6 +1150,7 @@ let currentChannel = null;
 let editingChannelId = null;
 let sheetData = [];
 let bundleMap = {};
+let catalogoPrincipalMap = {};
 let envioData = [];
 let envioMap  = {};
 let masivoResultados = [];
@@ -1790,9 +1855,20 @@ const EMAILJS_PUBLIC_KEY  = 'PjT52wA-rrrMY0rY0';
 /* =============================================
    CATÁLOGOS — Firestore
 ============================================= */
-let _catalogoMeta = { bundles: null, envios: null };
+let _catalogoMeta = { bundles: null, principal: null, envios: null };
 
 async function loadCatalogos() {
+  try {
+    const principalSnap = await _db.collection('catalogoPrincipal').get();
+    catalogoPrincipalMap = {};
+    principalSnap.docs.forEach(d => {
+      const data = d.data();
+      catalogoPrincipalMap[String(data.articulo).trim()] = data;
+    });
+    console.log(`✅ Catálogo principal: ${principalSnap.size} artículos`);
+  } catch(e) {
+    console.warn('Error cargando catálogo principal:', e);
+  }
   try {
     const bundlesSnap = await _db.collection('catalogoBundles').get();
     if (!bundlesSnap.empty) {
@@ -1821,10 +1897,14 @@ async function loadCatalogos() {
 
 async function loadCatalogoMeta() {
   try {
-    const bMeta = await _db.collection('catalogoMeta').doc('bundles').get();
-    const eMeta = await _db.collection('catalogoMeta').doc('envios').get();
-    _catalogoMeta.bundles = bMeta.exists ? bMeta.data() : null;
-    _catalogoMeta.envios  = eMeta.exists ? eMeta.data() : null;
+    const [bMeta, pMeta, eMeta] = await Promise.all([
+      _db.collection('catalogoMeta').doc('bundles').get(),
+      _db.collection('catalogoMeta').doc('principal').get(),
+      _db.collection('catalogoMeta').doc('envios').get(),
+    ]);
+    _catalogoMeta.bundles   = bMeta.exists ? bMeta.data() : null;
+    _catalogoMeta.principal = pMeta.exists ? pMeta.data() : null;
+    _catalogoMeta.envios    = eMeta.exists ? eMeta.data() : null;
     renderCatalogoMetaDash();
   } catch(e) { console.warn('Error cargando meta:', e); }
 }
@@ -1838,26 +1918,51 @@ function renderCatalogoMetaDash() {
     return `${d.toLocaleDateString('es-MX')} · ${m.updatedBy ?? '—'} · ${(m.count ?? 0).toLocaleString()} reg.`;
   }
   el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Catálogo principal</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.principal)}</div>
+      </div>
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Bundles</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:2px">${fmtMeta(_catalogoMeta.bundles)}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.bundles)}</div>
       </div>
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Envíos</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:2px">${fmtMeta(_catalogoMeta.envios)}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.envios)}</div>
       </div>
     </div>`;
 }
 
 function showCatTab(tab) {
-  ['bundles','envios'].forEach(t => {
+  ['bundles','principal','envios'].forEach(t => {
     document.getElementById(`catView-${t}`).style.display = t === tab ? '' : 'none';
     const btn = document.getElementById(`catTab-${t}`);
     if (btn) btn.className = t === tab ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
   });
   if (tab === 'bundles') renderCatalogoBundlesTable();
+  else if (tab === 'principal') renderCatalogoPrincipalTable();
   else renderCatalogoEnviosTable();
+}
+
+function renderCatalogoPrincipalTable() {
+  const q = (document.getElementById('principalSearch')?.value ?? '').toUpperCase();
+  const rows = Object.values(catalogoPrincipalMap).filter(r =>
+    !q || String(r.articulo).includes(q) || (r.descripcion??'').toUpperCase().includes(q)
+  );
+  const label = document.getElementById('principalCountLabel');
+  if (label) label.textContent = `${rows.length} artículos`;
+  const tbody = document.getElementById('principalTableBody');
+  if (!tbody) return;
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
+  tbody.innerHTML = rows.slice(0, 300).map(r => `
+    <tr>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${r.articulo ?? ''}</td>
+      <td>${r.descripcion ?? ''}</td>
+      <td><span class="badge ${(r.estatus??'').trim()==='ALTA'?'badge-success':'badge-gray'}" style="font-size:10px">${(r.estatus??'').trim()}</span></td>
+      <td class="right">$${(r.ultimoCosto ?? 0).toLocaleString('es-MX', {minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td style="text-align:center"><button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:2px 8px" onclick="eliminarPrincipalRow('${r._docId ?? ''}')">✕</button></td>
+    </tr>`).join('');
 }
 
 function renderCatalogoBundlesTable() {
@@ -1872,16 +1977,21 @@ function renderCatalogoBundlesTable() {
   if (label) label.textContent = `${uniqueBundles} bundles · ${rows.length} componentes`;
   const tbody = document.getElementById('bundlesTableBody');
   if (!tbody) return;
-  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
-  tbody.innerHTML = rows.slice(0, 300).map(r => `
-    <tr>
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
+  tbody.innerHTML = rows.slice(0, 300).map(r => {
+    const compEntry = catalogoPrincipalMap[String(r.componente ?? '').trim()];
+    const compDesc = compEntry?.descripcion ?? '—';
+    const compCosto = compEntry?.ultimoCosto != null ? `$${compEntry.ultimoCosto.toLocaleString('es-MX')}` : '<span style="color:var(--danger);font-size:11px">Sin costo</span>';
+    return `<tr>
       <td><span class="badge">${r.bundle ?? ''}</span></td>
       <td style="color:var(--text3);font-size:12px">${r.componente ?? ''}</td>
       <td>${r.descripcion ?? ''}</td>
+      <td style="font-size:12px;color:var(--text2)">${compDesc}</td>
       <td class="right">${r.cantidad ?? 1}</td>
-      <td class="right">$${(r.costo ?? 0).toLocaleString('es-MX')}</td>
+      <td class="right">${compCosto}</td>
       <td style="text-align:center"><button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:2px 8px" onclick="eliminarBundleRow('${r._docId ?? ''}')">✕</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function renderCatalogoEnviosTable() {
@@ -1903,14 +2013,27 @@ function renderCatalogoEnviosTable() {
 function descargarTemplateBundles() {
   const wb = XLSX.utils.book_new();
   const data = [
-    ['SKU_Bundle','SKU_Componente','Descripcion','Cantidad','Costo'],
-    ['200401401AP','200401401','COLCHON AMERICA MIAMI IND',1,3200],
-    ['200401401AP','24131141','ALMOHADAS BASIC ATLAS 2 PACK',1,280],
+    ['SKU_Bundle','SKU_Componente','Descripcion_Bundle','Cantidad'],
+    ['200401401AP','200401401','COLCHON AMERICA MIAMI INDIVIDUAL + ACCESORIOS',1],
+    ['200401401AP','24131141','COLCHON AMERICA MIAMI INDIVIDUAL + ACCESORIOS',1],
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [20,20,40,10,12].map(w => ({ wch: w }));
+  ws['!cols'] = [20,20,45,10].map(w => ({ wch: w }));
   XLSX.utils.book_append_sheet(wb, ws, 'Bundles');
   XLSX.writeFile(wb, 'Plantilla_Bundles.xlsx');
+}
+
+function descargarTemplatePrincipal() {
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['Articulo','Descripcion','Tipo','Estatus','UltimoCosto'],
+    ['200401401','COLCHON AMERICA MIAMI IND','Normal','ALTA',1745],
+    ['24131141','ALMOHADAS BASIC ATLAS 2 PACK','Normal','ALTA',280],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [20,45,12,12,14].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Catalogo');
+  XLSX.writeFile(wb, 'Plantilla_CatalogoPrincipal.xlsx');
 }
 
 function descargarTemplateEnvios() {
@@ -1999,13 +2122,88 @@ async function procesarEnviosFile(file) {
   }
 }
 
+async function procesarPrincipalFile(file) {
+  if (!file) return;
+  const msgEl = document.getElementById('principalUploadMsg');
+  msgEl.style.display = 'block'; msgEl.style.color = 'var(--text2)'; msgEl.textContent = 'Procesando archivo...';
+  try {
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!rows.length) throw new Error('El archivo está vacío');
+    const normalized = rows.map(r => {
+      const key = k => Object.keys(r).find(x => x.toUpperCase().replace(/[^A-Z]/g,'').includes(k)) ?? '';
+      return {
+        articulo:    String(r[key('ARTIC')] || r[key('SKU')] || '').trim(),
+        descripcion: String(r[key('DESC')] || '').trim(),
+        tipo:        String(r[key('TIPO')] || 'Normal').trim(),
+        estatus:     String(r[key('ESTAT')] || 'ALTA').trim(),
+        ultimoCosto: parseCosto(r[key('COSTO')] || r[key('COST')] || r[key('ULTIMO')] || 0),
+      };
+    }).filter(r => r.articulo);
+    if (!normalized.length) throw new Error('No se encontraron filas válidas (Articulo es requerido)');
+    msgEl.textContent = `Cargando ${normalized.length} artículos a Firestore...`;
+    await upsertPrincipalBatch(normalized);
+    msgEl.style.color = 'var(--success)'; msgEl.textContent = `✅ ${normalized.length} artículos cargados correctamente`;
+    document.getElementById('principalFileInput').value = '';
+    renderCatalogoPrincipalTable();
+  } catch(e) {
+    msgEl.style.color = 'var(--danger)'; msgEl.textContent = `Error: ${e.message}`;
+  }
+}
+
+function handlePrincipalDrop(event) {
+  event.preventDefault();
+  document.getElementById('principalDropZone').style.borderColor = 'var(--border2)';
+  const file = event.dataTransfer.files[0];
+  if (file) procesarPrincipalFile(file);
+}
+
+async function upsertPrincipalBatch(rows) {
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = _db.batch();
+    rows.slice(i, i + BATCH_SIZE).forEach(r => {
+      const docId = r.articulo.replace(/[^a-zA-Z0-9_-]/g, '_');
+      batch.set(_db.collection('catalogoPrincipal').doc(docId), { ...r, _docId: docId }, { merge: true });
+    });
+    await batch.commit();
+  }
+  const snap = await _db.collection('catalogoPrincipal').get();
+  catalogoPrincipalMap = {};
+  snap.docs.forEach(d => {
+    const data = d.data();
+    catalogoPrincipalMap[String(data.articulo).trim()] = data;
+  });
+  const meta = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: snap.size };
+  await _db.collection('catalogoMeta').doc('principal').set(meta);
+  _catalogoMeta.principal = { ...meta, updatedAt: new Date() };
+  renderCatalogoMetaDash();
+}
+
+async function eliminarPrincipalRow(docId) {
+  if (!docId || !confirm('¿Eliminar este artículo del catálogo principal?')) return;
+  try {
+    const entry = Object.values(catalogoPrincipalMap).find(r => r._docId === docId);
+    await _db.collection('catalogoPrincipal').doc(docId).delete();
+    if (entry) delete catalogoPrincipalMap[String(entry.articulo).trim()];
+    await _db.collection('catalogoMeta').doc('principal').set(
+      { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: Object.keys(catalogoPrincipalMap).length },
+      { merge: true }
+    );
+    renderCatalogoPrincipalTable();
+  } catch(e) { alert('No se pudo eliminar: ' + e.message); }
+}
+
 async function upsertBundlesBatch(rows) {
   const BATCH_SIZE = 400;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = _db.batch();
     rows.slice(i, i + BATCH_SIZE).forEach(r => {
       const docId = `${r.bundle}__${r.componente}`.replace(/[^a-zA-Z0-9_-]/g, '_');
-      batch.set(_db.collection('catalogoBundles').doc(docId), { ...r, _docId: docId }, { merge: true });
+      const { costo: _removed, ...clean } = r; // bundle catalog has no cost
+      batch.set(_db.collection('catalogoBundles').doc(docId), { ...clean, _docId: docId }, { merge: true });
     });
     await batch.commit();
   }
@@ -2044,18 +2242,38 @@ async function guardarBundleManual() {
   const componente  = document.getElementById('mb-skuComp').value.trim();
   const descripcion = document.getElementById('mb-desc').value.trim();
   const cantidad    = parseFloat(document.getElementById('mb-cantidad').value) || 1;
-  const costo       = parseCosto(document.getElementById('mb-costo').value);
   const msgEl = document.getElementById('mbMsg');
   if (!bundle || !componente) {
     msgEl.style.display='block'; msgEl.style.color='var(--danger)'; msgEl.textContent='SKU Bundle y SKU Componente son requeridos'; return;
   }
   msgEl.style.display='block'; msgEl.style.color='var(--text2)'; msgEl.textContent='Guardando...';
   try {
-    await upsertBundlesBatch([{ bundle, componente, descripcion, cantidad, costo }]);
+    await upsertBundlesBatch([{ bundle, componente, descripcion, cantidad }]);
     msgEl.style.color='var(--success)'; msgEl.textContent='✅ Guardado correctamente';
-    ['mb-skuBundle','mb-skuComp','mb-desc','mb-costo'].forEach(id => document.getElementById(id).value='');
+    ['mb-skuBundle','mb-skuComp','mb-desc'].forEach(id => document.getElementById(id).value='');
     document.getElementById('mb-cantidad').value='1';
     renderCatalogoBundlesTable();
+  } catch(e) { msgEl.style.color='var(--danger)'; msgEl.textContent=`Error: ${e.message}`; }
+}
+
+async function guardarPrincipalManual() {
+  const articulo    = document.getElementById('mp-articulo').value.trim();
+  const descripcion = document.getElementById('mp-desc').value.trim();
+  const tipo        = document.getElementById('mp-tipo').value.trim() || 'Normal';
+  const estatus     = document.getElementById('mp-estatus').value;
+  const ultimoCosto = parseCosto(document.getElementById('mp-costo').value);
+  const msgEl = document.getElementById('mpMsg');
+  if (!articulo) {
+    msgEl.style.display='block'; msgEl.style.color='var(--danger)'; msgEl.textContent='El artículo (SKU) es requerido'; return;
+  }
+  msgEl.style.display='block'; msgEl.style.color='var(--text2)'; msgEl.textContent='Guardando...';
+  try {
+    await upsertPrincipalBatch([{ articulo, descripcion, tipo, estatus, ultimoCosto }]);
+    msgEl.style.color='var(--success)'; msgEl.textContent='✅ Guardado correctamente';
+    ['mp-articulo','mp-desc','mp-costo'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('mp-tipo').value='Normal';
+    document.getElementById('mp-estatus').value='ALTA';
+    renderCatalogoPrincipalTable();
   } catch(e) { msgEl.style.color='var(--danger)'; msgEl.textContent=`Error: ${e.message}`; }
 }
 
@@ -2167,27 +2385,44 @@ function buildBundleMap() {
 }
 
 function loadDemoData() {
-  // Demo data basada en el sheet real
-  const demo = [
-    {bundle:'200401401AP',cantidad:1,componente:'200401401',descripcion:'COLCHON AMERICA MIAMI IND',costo:3200},
-    {bundle:'200401401AP',cantidad:1,componente:'24131141',descripcion:'ALMOHADAS BASIC ATLAS 2 PACK',costo:280},
-    {bundle:'200401401AP',cantidad:1,componente:'240112181',descripcion:'PROTECTOR DE COLCHÓN INDIVIDUAL BASIC ATLAS',costo:175},
-    {bundle:'200401401B',cantidad:1,componente:'200401401',descripcion:'COLCHON AMERICA MIAMI IND',costo:3200},
-    {bundle:'200401401B',cantidad:1,componente:'2421001',descripcion:'BOX CARREIRO INDIVIDUAL',costo:1450},
-    {bundle:'200401601SPAB',cantidad:1,componente:'200401601',descripcion:'COLCHON AMERICA FRIDA IND',costo:2949},
-    {bundle:'200401601SPAB',cantidad:1,componente:'2421001',descripcion:'BOX CARREIRO INDIVIDUAL',costo:1200},
-    {bundle:'200401601SPAB',cantidad:1,componente:'24131141',descripcion:'ALMOHADAS BASIC ATLAS 2 PACK',costo:280},
-    {bundle:'200401601SPAB',cantidad:1,componente:'240112181',descripcion:'PROTECTOR DE COLCHÓN INDIVIDUAL BASIC ATLAS',costo:175},
-    {bundle:'200401601SPAB',cantidad:1,componente:'240113401',descripcion:'JUEGO DE SABANAS ATLAS SOFT INDIVIDUAL BLANCO',costo:145},
-    {bundle:'200401504BAP',cantidad:1,componente:'200401504',descripcion:'COLCHON AMERICA MISURI KS',costo:6800},
-    {bundle:'200401504BAP',cantidad:2,componente:'2421001',descripcion:'BOX CARREIRO INDIVIDUAL',costo:1200},
-    {bundle:'200401504BAP',cantidad:1,componente:'24131141',descripcion:'ALMOHADAS BASIC ATLAS 2 PACK',costo:280},
-    {bundle:'200401504BAP',cantidad:1,componente:'24131154',descripcion:'PROTECTOR ATLAS WATERPROOF PREMIUM KING',costo:320},
-    {bundle:'200401602BB',cantidad:1,componente:'200401602',descripcion:'COLCHON AMERICA FRIDA MAT',costo:3500},
-    {bundle:'200401602BB',cantidad:1,componente:'201202152',descripcion:'BOX PRINCIPE P MATRIMONIAL',costo:2200},
-    {bundle:'200401602BB',cantidad:2,componente:'2414002',descripcion:'BURO KYGO',costo:890},
+  const demoComps = [
+    {sku:'200401401', desc:'COLCHON AMERICA MIAMI IND', costo:3200},
+    {sku:'200401601', desc:'COLCHON AMERICA FRIDA IND', costo:2949},
+    {sku:'200401504', desc:'COLCHON AMERICA MISURI KS', costo:6800},
+    {sku:'200401602', desc:'COLCHON AMERICA FRIDA MAT', costo:3500},
+    {sku:'24131141',  desc:'ALMOHADAS BASIC ATLAS 2 PACK', costo:280},
+    {sku:'240112181', desc:'PROTECTOR COLCHÓN INDIVIDUAL BASIC ATLAS', costo:175},
+    {sku:'240113401', desc:'JUEGO DE SABANAS ATLAS SOFT INDIVIDUAL BLANCO', costo:145},
+    {sku:'24131154',  desc:'PROTECTOR ATLAS WATERPROOF PREMIUM KING', costo:320},
+    {sku:'2421001',   desc:'BOX CARREIRO INDIVIDUAL', costo:1450},
+    {sku:'201202152', desc:'BOX PRINCIPE P MATRIMONIAL', costo:2200},
+    {sku:'2414002',   desc:'BURO KYGO', costo:890},
   ];
-  sheetData = demo;
+  // Populate catalogoPrincipalMap with demo costs
+  if (Object.keys(catalogoPrincipalMap).length === 0) {
+    demoComps.forEach(c => {
+      catalogoPrincipalMap[c.sku] = { articulo: c.sku, descripcion: c.desc, tipo: 'Normal', estatus: 'ALTA', ultimoCosto: c.costo, _docId: c.sku };
+    });
+  }
+  sheetData = [
+    {bundle:'200401401AP',cantidad:1,componente:'200401401',descripcion:'CONJUNTO MIAMI INDIVIDUAL + ACCESORIOS'},
+    {bundle:'200401401AP',cantidad:1,componente:'24131141',descripcion:'CONJUNTO MIAMI INDIVIDUAL + ACCESORIOS'},
+    {bundle:'200401401AP',cantidad:1,componente:'240112181',descripcion:'CONJUNTO MIAMI INDIVIDUAL + ACCESORIOS'},
+    {bundle:'200401401B', cantidad:1,componente:'200401401',descripcion:'CONJUNTO MIAMI INDIVIDUAL + BOX'},
+    {bundle:'200401401B', cantidad:1,componente:'2421001',  descripcion:'CONJUNTO MIAMI INDIVIDUAL + BOX'},
+    {bundle:'200401601SPAB',cantidad:1,componente:'200401601',descripcion:'CONJUNTO FRIDA INDIVIDUAL + BOX + ACCESORIOS'},
+    {bundle:'200401601SPAB',cantidad:1,componente:'2421001',  descripcion:'CONJUNTO FRIDA INDIVIDUAL + BOX + ACCESORIOS'},
+    {bundle:'200401601SPAB',cantidad:1,componente:'24131141', descripcion:'CONJUNTO FRIDA INDIVIDUAL + BOX + ACCESORIOS'},
+    {bundle:'200401601SPAB',cantidad:1,componente:'240112181',descripcion:'CONJUNTO FRIDA INDIVIDUAL + BOX + ACCESORIOS'},
+    {bundle:'200401601SPAB',cantidad:1,componente:'240113401',descripcion:'CONJUNTO FRIDA INDIVIDUAL + BOX + ACCESORIOS'},
+    {bundle:'200401504BAP',cantidad:1,componente:'200401504',descripcion:'CONJUNTO MISURI KS + ACCESORIOS'},
+    {bundle:'200401504BAP',cantidad:2,componente:'2421001',  descripcion:'CONJUNTO MISURI KS + ACCESORIOS'},
+    {bundle:'200401504BAP',cantidad:1,componente:'24131141', descripcion:'CONJUNTO MISURI KS + ACCESORIOS'},
+    {bundle:'200401504BAP',cantidad:1,componente:'24131154', descripcion:'CONJUNTO MISURI KS + ACCESORIOS'},
+    {bundle:'200401602BB', cantidad:1,componente:'200401602',descripcion:'CONJUNTO FRIDA MATRIMONIAL + BOX + BUROS'},
+    {bundle:'200401602BB', cantidad:1,componente:'201202152',descripcion:'CONJUNTO FRIDA MATRIMONIAL + BOX + BUROS'},
+    {bundle:'200401602BB', cantidad:2,componente:'2414002',  descripcion:'CONJUNTO FRIDA MATRIMONIAL + BOX + BUROS'},
+  ];
   buildBundleMap();
 }
 
@@ -2297,11 +2532,21 @@ function updateChannelParamUI(scope) {
    MOTOR DE CÁLCULO
 ============================================= */
 function calcularBundle(skuBundle, ch, margen, guias, envioOverride) {
-  const componentes = bundleMap[skuBundle];
-  if(!componentes || componentes.length===0) return null;
+  const _rawComps = bundleMap[skuBundle];
+  if(!_rawComps || _rawComps.length===0) return null;
+
+  // Enriquecer componentes con costo y descripción del catálogo principal
+  const componentes = _rawComps.map(c => {
+    const entry = catalogoPrincipalMap[String(c.componente ?? '').trim()];
+    return {
+      ...c,
+      descripcion: entry?.descripcion ?? c.descripcion ?? '',
+      costo: entry?.ultimoCosto ?? c.costo ?? 0,
+    };
+  });
 
   // Verificar si hay costos faltantes
-  const sinCosto = componentes.filter(c=>!c.costo||c.costo===0);
+  const sinCosto = componentes.filter(c => !c.costo || c.costo === 0);
 
   // Costo de la bolsa según tamaño detectado en descripciones
   const tamano = detectarTamano(componentes);
@@ -2312,7 +2557,7 @@ function calcularBundle(skuBundle, ch, margen, guias, envioOverride) {
   // Costo con IVA (× 1.16)
   const costoIva = costoSinIva * 1.16;
 
-  // Colchón principal = primer componente cuyo SKU no es accesorio
+  // Colchón principal = primer componente
   const colchonComp = componentes[0];
   const costoColchon = colchonComp ? colchonComp.costo * (colchonComp.cantidad||1) : 0;
 
