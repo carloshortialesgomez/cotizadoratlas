@@ -807,9 +807,8 @@ td.center{text-align:center}
     </div>
     <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:1.25rem;width:fit-content">
       <button class="btn btn-primary btn-sm" id="catTab-bundles" onclick="showCatTab('bundles')">Bundles</button>
-      <button class="btn btn-ghost btn-sm" id="catTab-principal" onclick="showCatTab('principal')">Catálogo principal</button>
-      <button class="btn btn-ghost btn-sm" id="catTab-envios" onclick="showCatTab('envios')">Envíos</button>
       <button class="btn btn-ghost btn-sm" id="catTab-articulos" onclick="showCatTab('articulos')">Artículos</button>
+      <button class="btn btn-ghost btn-sm" id="catTab-envios" onclick="showCatTab('envios')">Envíos</button>
     </div>
 
     <!-- Bundles tab -->
@@ -875,75 +874,6 @@ td.center{text-align:center}
 
     <!-- Envíos tab -->
     <!-- Catálogo Principal tab -->
-    <div id="catView-principal" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
-        <div class="card">
-          <div class="card-title"><div class="card-title-icon">📤</div>Carga masiva desde Excel</div>
-          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
-            Sube un <strong>.xlsx</strong> con columnas: <strong>Articulo · Descripcion · Tipo · Estatus · UltimoCosto</strong><br>
-            <span style="font-size:11px;color:var(--text3)">Compatible con el archivo catalogo.xlsx generado por el sistema.</span>
-          </p>
-          <div id="principalDropZone" style="border:2px dashed var(--border2);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s"
-               onclick="document.getElementById('principalFileInput').click()"
-               ondragover="event.preventDefault();this.style.borderColor='var(--atlas-red)'"
-               ondragleave="this.style.borderColor='var(--border2)'"
-               ondrop="handlePrincipalDrop(event)">
-            <div style="font-size:2rem;margin-bottom:8px">📁</div>
-            <div style="font-size:13px;color:var(--text3)">Haz clic o arrastra tu archivo .xlsx aquí</div>
-          </div>
-          <input type="file" id="principalFileInput" accept=".xlsx,.xls" style="display:none" onchange="procesarPrincipalFile(this.files[0])">
-          <div id="principalUploadMsg" style="font-size:12px;margin-top:8px;display:none"></div>
-          <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="descargarTemplatePrincipal()">↓ Descargar plantilla</button>
-        </div>
-        <div class="card">
-          <div class="card-title"><div class="card-title-icon">✏️</div>Alta/actualización manual</div>
-          <div class="field">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-              <label class="field-label" style="margin-bottom:0">Artículo (SKU)</label>
-              <span id="mp-lookup-badge" style="font-size:11px;font-weight:600;display:none"></span>
-            </div>
-            <input class="input" id="mp-articulo" placeholder="ej. 200401401" oninput="lookupPrincipalSKU(this.value)">
-          </div>
-          <div class="field">
-            <label class="field-label">Descripción</label>
-            <input class="input" id="mp-desc" placeholder="ej. COLCHON AMERICA MIAMI IND">
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label class="field-label">Tipo</label>
-              <input class="input" id="mp-tipo" value="Normal">
-            </div>
-            <div class="field">
-              <label class="field-label">Estatus</label>
-              <select class="input" id="mp-estatus">
-                <option value="ALTA">ALTA</option>
-                <option value="BLOQUEADO">BLOQUEADO</option>
-                <option value="DESCONTINUADO">DESCONTINUADO</option>
-              </select>
-            </div>
-          </div>
-          <div class="field">
-            <label class="field-label">Último Costo $</label>
-            <input class="input" type="number" id="mp-costo" placeholder="0.00" min="0" step="0.01">
-          </div>
-          <div id="mpMsg" style="font-size:12px;margin-top:4px;display:none"></div>
-          <button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="guardarPrincipalManual()">Guardar artículo</button>
-        </div>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:13px;font-weight:600" id="principalCountLabel">— artículos</div>
-          <input class="input" id="principalSearch" placeholder="Buscar artículo o descripción..." oninput="renderCatalogoPrincipalTable()" style="width:260px">
-        </div>
-        <div class="table-wrap" style="border:none;max-height:420px;overflow-y:auto">
-          <table>
-            <thead><tr><th>Artículo</th><th>Descripción</th><th>Estatus</th><th class="right">Último Costo</th><th></th></tr></thead>
-            <tbody id="principalTableBody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <div id="catView-envios" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
         <div class="card">
@@ -1001,7 +931,7 @@ td.center{text-align:center}
           <div class="card-title"><div class="card-title-icon">📤</div>Carga masiva desde Excel</div>
           <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
             Sube un <strong>.xlsx</strong> con columnas:<br>
-            <strong>Clave · Descripcion · Tipo · Categoria · Grupo · Rama · Familia · Fabricante · Linea2 · Presentacion · Linea</strong>
+            <strong>Clave · Descripcion · Tipo · Categoria · Grupo · Rama · Familia · Fabricante · Linea2 · Presentacion · Linea · UltimoCosto</strong>
           </p>
           <div id="articuloDropZone" style="border:2px dashed var(--border2);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s"
                onclick="document.getElementById('articuloFileInput').click()"
@@ -1048,6 +978,10 @@ td.center{text-align:center}
             <label class="field-label">Línea</label>
             <input class="input" id="ma-linea" placeholder="">
           </div>
+          <div class="field">
+            <label class="field-label">Último Costo $</label>
+            <input class="input" type="number" id="ma-costo" placeholder="0.00" min="0" step="0.01">
+          </div>
           <div id="maMsg" style="font-size:12px;margin-top:4px;display:none"></div>
           <button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="guardarArticuloManual()">Guardar artículo</button>
         </div>
@@ -1059,8 +993,8 @@ td.center{text-align:center}
         </div>
         <div class="table-wrap" style="border:none;max-height:420px;overflow-y:auto">
           <table>
-            <thead><tr><th>Clave</th><th>Descripción</th><th>Tipo</th><th>Categoría</th><th>Familia</th><th>Fabricante</th><th>Línea</th><th></th></tr></thead>
-            <tbody id="articulosTableBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
+            <thead><tr><th>Clave</th><th>Descripción</th><th>Tipo</th><th>Categoría</th><th>Familia</th><th>Fabricante</th><th>Línea</th><th class="right">Último Costo</th><th></th></tr></thead>
+            <tbody id="articulosTableBody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1425,7 +1359,6 @@ let currentChannel = null;
 let editingChannelId = null;
 let sheetData = [];
 let bundleMap = {};
-let catalogoPrincipalMap = {};
 let catalogoArticulosMap = {};
 let envioData = [];
 let envioMap  = {};
@@ -2477,17 +2410,6 @@ let _catalogoMeta = { bundles: null, principal: null, envios: null, articulos: n
 
 async function loadCatalogos() {
   try {
-    const principalSnap = await _db.collection('catalogoPrincipal').get();
-    catalogoPrincipalMap = {};
-    principalSnap.docs.forEach(d => {
-      const data = d.data();
-      catalogoPrincipalMap[String(data.articulo).trim()] = data;
-    });
-    console.log(`✅ Catálogo principal: ${principalSnap.size} artículos`);
-  } catch(e) {
-    console.warn('Error cargando catálogo principal:', e);
-  }
-  try {
     const bundlesSnap = await _db.collection('catalogoBundles').get();
     if (!bundlesSnap.empty) {
       sheetData = bundlesSnap.docs.map(d => d.data());
@@ -2526,14 +2448,12 @@ async function loadCatalogos() {
 
 async function loadCatalogoMeta() {
   try {
-    const [bMeta, pMeta, eMeta, aMeta] = await Promise.all([
+    const [bMeta, eMeta, aMeta] = await Promise.all([
       _db.collection('catalogoMeta').doc('bundles').get(),
-      _db.collection('catalogoMeta').doc('principal').get(),
       _db.collection('catalogoMeta').doc('envios').get(),
       _db.collection('catalogoMeta').doc('articulos').get(),
     ]);
     _catalogoMeta.bundles   = bMeta.exists ? bMeta.data() : null;
-    _catalogoMeta.principal = pMeta.exists ? pMeta.data() : null;
     _catalogoMeta.envios    = eMeta.exists ? eMeta.data() : null;
     _catalogoMeta.articulos = aMeta.exists ? aMeta.data() : null;
     renderCatalogoMetaDash();
@@ -2551,8 +2471,8 @@ function renderCatalogoMetaDash() {
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px">
       <div>
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Catálogo principal</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.principal)}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Artículos</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.articulos)}</div>
       </div>
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Bundles</div>
@@ -2562,44 +2482,20 @@ function renderCatalogoMetaDash() {
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Envíos</div>
         <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.envios)}</div>
       </div>
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Artículos</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.articulos)}</div>
-      </div>
     </div>`;
 }
 
 function showCatTab(tab) {
-  ['bundles','principal','envios','articulos'].forEach(t => {
+  ['bundles','envios','articulos'].forEach(t => {
     document.getElementById(`catView-${t}`).style.display = t === tab ? '' : 'none';
     const btn = document.getElementById(`catTab-${t}`);
     if (btn) btn.className = t === tab ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
   });
   if (tab === 'bundles') renderCatalogoBundlesTable();
-  else if (tab === 'principal') renderCatalogoPrincipalTable();
   else if (tab === 'articulos') renderCatalogoArticulosTable();
   else renderCatalogoEnviosTable();
 }
 
-function renderCatalogoPrincipalTable() {
-  const q = (document.getElementById('principalSearch')?.value ?? '').toUpperCase();
-  const rows = Object.values(catalogoPrincipalMap).filter(r =>
-    !q || String(r.articulo).includes(q) || (r.descripcion??'').toUpperCase().includes(q)
-  );
-  const label = document.getElementById('principalCountLabel');
-  if (label) label.textContent = `${rows.length} artículos`;
-  const tbody = document.getElementById('principalTableBody');
-  if (!tbody) return;
-  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
-  tbody.innerHTML = rows.slice(0, 300).map(r => `
-    <tr>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${r.articulo ?? ''}</td>
-      <td>${r.descripcion ?? ''}</td>
-      <td><span class="badge ${(r.estatus??'').trim()==='ALTA'?'badge-success':'badge-gray'}" style="font-size:10px">${(r.estatus??'').trim()}</span></td>
-      <td class="right">$${(r.ultimoCosto ?? 0).toLocaleString('es-MX', {minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-      <td style="text-align:center"><button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:2px 8px" onclick="eliminarPrincipalRow('${r._docId ?? ''}')">✕</button></td>
-    </tr>`).join('');
-}
 
 function renderCatalogoBundlesTable() {
   const q = (document.getElementById('bundleSearch')?.value ?? '').toUpperCase();
@@ -2615,7 +2511,7 @@ function renderCatalogoBundlesTable() {
   if (!tbody) return;
   if (!rows.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
   tbody.innerHTML = rows.slice(0, 300).map(r => {
-    const compEntry = catalogoPrincipalMap[String(r.componente ?? '').trim()];
+    const compEntry = catalogoArticulosMap[String(r.componente ?? '').trim()];
     const compDesc = compEntry?.descripcion ?? '—';
     const compCosto = compEntry?.ultimoCosto != null ? `$${compEntry.ultimoCosto.toLocaleString('es-MX')}` : '<span style="color:var(--danger);font-size:11px">Sin costo</span>';
     return `<tr>
@@ -2659,18 +2555,6 @@ function descargarTemplateBundles() {
   XLSX.writeFile(wb, 'Plantilla_Bundles.xlsx');
 }
 
-function descargarTemplatePrincipal() {
-  const wb = XLSX.utils.book_new();
-  const data = [
-    ['Articulo','Descripcion','Tipo','Estatus','UltimoCosto'],
-    ['200401401','COLCHON AMERICA MIAMI IND','Normal','ALTA',1745],
-    ['24131141','ALMOHADAS BASIC ATLAS 2 PACK','Normal','ALTA',280],
-  ];
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [20,45,12,12,14].map(w => ({ wch: w }));
-  XLSX.utils.book_append_sheet(wb, ws, 'Catalogo');
-  XLSX.writeFile(wb, 'Plantilla_CatalogoPrincipal.xlsx');
-}
 
 function descargarTemplateEnvios() {
   const wb = XLSX.utils.book_new();
@@ -2758,79 +2642,6 @@ async function procesarEnviosFile(file) {
   }
 }
 
-async function procesarPrincipalFile(file) {
-  if (!file) return;
-  const msgEl = document.getElementById('principalUploadMsg');
-  msgEl.style.display = 'block'; msgEl.style.color = 'var(--text2)'; msgEl.textContent = 'Procesando archivo...';
-  try {
-    const ab = await file.arrayBuffer();
-    const wb = XLSX.read(ab, { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    if (!rows.length) throw new Error('El archivo está vacío');
-    const normalized = rows.map(r => {
-      const key = k => Object.keys(r).find(x => x.toUpperCase().replace(/[^A-Z]/g,'').includes(k)) ?? '';
-      return {
-        articulo:    String(r[key('ARTIC')] || r[key('SKU')] || '').trim(),
-        descripcion: String(r[key('DESC')] || '').trim(),
-        tipo:        String(r[key('TIPO')] || 'Normal').trim(),
-        estatus:     String(r[key('ESTAT')] || 'ALTA').trim(),
-        ultimoCosto: parseCosto(r[key('COSTO')] || r[key('COST')] || r[key('ULTIMO')] || 0),
-      };
-    }).filter(r => r.articulo);
-    if (!normalized.length) throw new Error('No se encontraron filas válidas (Articulo es requerido)');
-    msgEl.textContent = `Cargando ${normalized.length} artículos a Firestore...`;
-    await upsertPrincipalBatch(normalized);
-    msgEl.style.color = 'var(--success)'; msgEl.textContent = `✅ ${normalized.length} artículos cargados correctamente`;
-    document.getElementById('principalFileInput').value = '';
-    renderCatalogoPrincipalTable();
-  } catch(e) {
-    msgEl.style.color = 'var(--danger)'; msgEl.textContent = `Error: ${e.message}`;
-  }
-}
-
-function handlePrincipalDrop(event) {
-  event.preventDefault();
-  document.getElementById('principalDropZone').style.borderColor = 'var(--border2)';
-  const file = event.dataTransfer.files[0];
-  if (file) procesarPrincipalFile(file);
-}
-
-async function upsertPrincipalBatch(rows) {
-  const BATCH_SIZE = 400;
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = _db.batch();
-    rows.slice(i, i + BATCH_SIZE).forEach(r => {
-      const docId = r.articulo.replace(/[^a-zA-Z0-9_-]/g, '_');
-      batch.set(_db.collection('catalogoPrincipal').doc(docId), { ...r, _docId: docId }, { merge: true });
-    });
-    await batch.commit();
-  }
-  const snap = await _db.collection('catalogoPrincipal').get();
-  catalogoPrincipalMap = {};
-  snap.docs.forEach(d => {
-    const data = d.data();
-    catalogoPrincipalMap[String(data.articulo).trim()] = data;
-  });
-  const meta = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: snap.size };
-  await _db.collection('catalogoMeta').doc('principal').set(meta);
-  _catalogoMeta.principal = { ...meta, updatedAt: new Date() };
-  renderCatalogoMetaDash();
-}
-
-async function eliminarPrincipalRow(docId) {
-  if (!docId || !await _uiConfirm('¿Eliminar este artículo del catálogo principal?', { icon:'🗑️', okLabel:'Eliminar', danger:true })) return;
-  try {
-    const entry = Object.values(catalogoPrincipalMap).find(r => r._docId === docId);
-    await _db.collection('catalogoPrincipal').doc(docId).delete();
-    if (entry) delete catalogoPrincipalMap[String(entry.articulo).trim()];
-    await _db.collection('catalogoMeta').doc('principal').set(
-      { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser?.email ?? '—', count: Object.keys(catalogoPrincipalMap).length },
-      { merge: true }
-    );
-    renderCatalogoPrincipalTable();
-  } catch(e) { alert('No se pudo eliminar: ' + e.message); }
-}
 
 async function upsertBundlesBatch(rows) {
   const BATCH_SIZE = 400;
@@ -2892,26 +2703,6 @@ async function guardarBundleManual() {
   } catch(e) { msgEl.style.color='var(--danger)'; msgEl.textContent=`Error: ${e.message}`; }
 }
 
-async function guardarPrincipalManual() {
-  const articulo    = document.getElementById('mp-articulo').value.trim();
-  const descripcion = document.getElementById('mp-desc').value.trim();
-  const tipo        = document.getElementById('mp-tipo').value.trim() || 'Normal';
-  const estatus     = document.getElementById('mp-estatus').value;
-  const ultimoCosto = parseCosto(document.getElementById('mp-costo').value);
-  const msgEl = document.getElementById('mpMsg');
-  if (!articulo) {
-    msgEl.style.display='block'; msgEl.style.color='var(--danger)'; msgEl.textContent='El artículo (SKU) es requerido'; return;
-  }
-  msgEl.style.display='block'; msgEl.style.color='var(--text2)'; msgEl.textContent='Guardando...';
-  try {
-    await upsertPrincipalBatch([{ articulo, descripcion, tipo, estatus, ultimoCosto }]);
-    msgEl.style.color='var(--success)'; msgEl.textContent='✅ Guardado correctamente';
-    ['mp-articulo','mp-desc','mp-costo'].forEach(id => document.getElementById(id).value='');
-    document.getElementById('mp-tipo').value='Normal';
-    document.getElementById('mp-estatus').value='ALTA';
-    renderCatalogoPrincipalTable();
-  } catch(e) { msgEl.style.color='var(--danger)'; msgEl.textContent=`Error: ${e.message}`; }
-}
 
 async function guardarEnvioManual() {
   const tipo  = document.getElementById('me-tipo').value.trim();
@@ -2978,7 +2769,7 @@ function renderCatalogoArticulosTable() {
   if (label) label.textContent = `${rows.length} artículos`;
   const tbody = document.getElementById('articulosTableBody');
   if (!tbody) return;
-  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:2rem">Sin datos cargados</td></tr>`; return; }
   tbody.innerHTML = rows.slice(0, 300).map(r => `
     <tr>
       <td style="font-family:'DM Mono',monospace;font-size:12px">${r.clave ?? ''}</td>
@@ -2988,6 +2779,7 @@ function renderCatalogoArticulosTable() {
       <td style="font-size:12px;color:var(--text2)">${r.familia ?? ''}</td>
       <td style="font-size:12px;color:var(--text2)">${r.fabricante ?? ''}</td>
       <td style="font-size:12px;color:var(--text2)">${r.linea ?? ''}</td>
+      <td class="right" style="font-size:12px">${r.ultimoCosto ? '$' + (r.ultimoCosto).toLocaleString('es-MX', {minimumFractionDigits:2,maximumFractionDigits:2}) : '<span style="color:var(--text3)">—</span>'}</td>
       <td style="text-align:center"><button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:2px 8px" onclick="eliminarArticuloRow('${r._docId ?? ''}')">✕</button></td>
     </tr>`).join('');
 }
@@ -3016,6 +2808,7 @@ async function procesarArticulosFile(file) {
         linea2:      String(r[key('LINEA2')] || '').trim(),
         presentacion:String(r[key('PRESENT')] || '').trim(),
         linea:       String(r[key('LINEA')] || '').trim(),
+        ultimoCosto: parseCosto(r[key('ULTIMOCOSTO')] || r[key('COSTO')] || r[key('ULTIMO')] || 0),
       };
     }).filter(r => r.clave);
     if (!normalized.length) throw new Error('No se encontraron filas válidas (Clave es requerida)');
@@ -3070,15 +2863,16 @@ async function guardarArticuloManual() {
   const linea2       = document.getElementById('ma-linea2').value.trim();
   const presentacion = document.getElementById('ma-presentacion').value.trim();
   const linea        = document.getElementById('ma-linea').value.trim();
+  const ultimoCosto  = parseCosto(document.getElementById('ma-costo').value);
   const msgEl = document.getElementById('maMsg');
   if (!clave) {
     msgEl.style.display='block'; msgEl.style.color='var(--danger)'; msgEl.textContent='La clave (SKU) es requerida'; return;
   }
   msgEl.style.display='block'; msgEl.style.color='var(--text2)'; msgEl.textContent='Guardando...';
   try {
-    await upsertArticulosBatch([{ clave, descripcion, tipo, categoria, grupo, rama, familia, fabricante, linea2, presentacion, linea }]);
+    await upsertArticulosBatch([{ clave, descripcion, tipo, categoria, grupo, rama, familia, fabricante, linea2, presentacion, linea, ultimoCosto }]);
     msgEl.style.color='var(--success)'; msgEl.textContent='✅ Guardado correctamente';
-    ['ma-clave','ma-descripcion','ma-tipo','ma-categoria','ma-grupo','ma-rama','ma-familia','ma-fabricante','ma-linea2','ma-presentacion','ma-linea'].forEach(id => document.getElementById(id).value='');
+    ['ma-clave','ma-descripcion','ma-tipo','ma-categoria','ma-grupo','ma-rama','ma-familia','ma-fabricante','ma-linea2','ma-presentacion','ma-linea','ma-costo'].forEach(id => document.getElementById(id).value='');
     const badge = document.getElementById('ma-lookup-badge'); if (badge) badge.style.display='none';
     renderCatalogoArticulosTable();
   } catch(e) { msgEl.style.color='var(--danger)'; msgEl.textContent=`Error: ${e.message}`; }
@@ -3101,11 +2895,11 @@ async function eliminarArticuloRow(docId) {
 function descargarTemplateArticulos() {
   const wb = XLSX.utils.book_new();
   const data = [
-    ['Clave','Descripcion','Tipo','Categoria','Grupo','Rama','Familia','Fabricante','Linea2','Presentacion','Linea'],
-    ['200401401','COLCHON AMERICA MIAMI IND','Producto','Descanso','Colchones','Resorte','Matrimonial','America','Dormitorio','Unidad','Premium'],
+    ['Clave','Descripcion','Tipo','Categoria','Grupo','Rama','Familia','Fabricante','Linea2','Presentacion','Linea','UltimoCosto'],
+    ['200401401','COLCHON AMERICA MIAMI IND','Producto','Descanso','Colchones','Resorte','Matrimonial','America','Dormitorio','Unidad','Premium',1745],
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [15,40,12,15,15,12,14,14,14,14,12].map(w => ({ wch: w }));
+  ws['!cols'] = [15,40,12,15,15,12,14,14,14,14,12,14].map(w => ({ wch: w }));
   XLSX.utils.book_append_sheet(wb, ws, 'Articulos');
   XLSX.writeFile(wb, 'Plantilla_Articulos.xlsx');
 }
@@ -3120,20 +2914,6 @@ function _setBadge(id, text, color) {
   el.style.display='inline'; el.style.color=color; el.textContent=text;
 }
 
-function lookupPrincipalSKU(val) {
-  const articulo = val.trim();
-  if (!articulo) { _setBadge('mp-lookup-badge','',''); return; }
-  const existing = catalogoPrincipalMap[articulo];
-  if (existing) {
-    document.getElementById('mp-desc').value    = existing.descripcion ?? '';
-    document.getElementById('mp-tipo').value    = existing.tipo ?? 'Normal';
-    document.getElementById('mp-estatus').value = existing.estatus ?? 'ALTA';
-    document.getElementById('mp-costo').value   = existing.ultimoCosto ?? '';
-    _setBadge('mp-lookup-badge','↻ Actualizando registro existente','var(--warning)');
-  } else {
-    _setBadge('mp-lookup-badge','+ Nuevo registro','var(--success)');
-  }
-}
 
 function lookupBundleSKU(val) {
   const bundle = val.trim().toUpperCase();
@@ -3175,6 +2955,7 @@ function lookupArticuloSKU(val) {
     document.getElementById('ma-linea2').value       = existing.linea2       ?? '';
     document.getElementById('ma-presentacion').value = existing.presentacion ?? '';
     document.getElementById('ma-linea').value        = existing.linea        ?? '';
+    document.getElementById('ma-costo').value        = existing.ultimoCosto  ?? '';
     _setBadge('ma-lookup-badge','↻ Actualizando registro existente','var(--warning)');
   } else {
     _setBadge('ma-lookup-badge','+ Nuevo registro','var(--success)');
@@ -3252,10 +3033,10 @@ function loadDemoData() {
     {sku:'201202152', desc:'BOX PRINCIPE P MATRIMONIAL', costo:2200},
     {sku:'2414002',   desc:'BURO KYGO', costo:890},
   ];
-  // Populate catalogoPrincipalMap with demo costs
-  if (Object.keys(catalogoPrincipalMap).length === 0) {
+  // Populate catalogoArticulosMap with demo costs
+  if (Object.keys(catalogoArticulosMap).length === 0) {
     demoComps.forEach(c => {
-      catalogoPrincipalMap[c.sku] = { articulo: c.sku, descripcion: c.desc, tipo: 'Normal', estatus: 'ALTA', ultimoCosto: c.costo, _docId: c.sku };
+      catalogoArticulosMap[c.sku] = { clave: c.sku, descripcion: c.desc, tipo: 'Normal', ultimoCosto: c.costo, _docId: c.sku };
     });
   }
   sheetData = [
@@ -3418,9 +3199,8 @@ function calcularBundle(skuBundle, ch, margen, guias, envioOverride, apoyoPromo 
 
   // Enriquecer componentes con costo, descripción y apoyo de marca
   const componentes = _rawComps.map(c => {
-    const entry = catalogoPrincipalMap[String(c.componente ?? '').trim()];
     const artEntry = catalogoArticulosMap[String(c.componente ?? '').trim()];
-    const costo = entry?.ultimoCosto ?? c.costo ?? 0;
+    const costo = artEntry?.ultimoCosto ?? c.costo ?? 0;
     const marca = artEntry?.presentacion ?? '';
     const apoyo = getActiveApoyoMarca(marca);
     let apoyoImporte = 0;
@@ -3432,7 +3212,7 @@ function calcularBundle(skuBundle, ch, margen, guias, envioOverride, apoyoPromo 
     const costoEfectivo = Math.max(0, costo - apoyoImporte);
     return {
       ...c,
-      descripcion: entry?.descripcion ?? c.descripcion ?? '',
+      descripcion: artEntry?.descripcion ?? c.descripcion ?? '',
       costo,
       marca,
       apoyoMarca: apoyoImporte,
