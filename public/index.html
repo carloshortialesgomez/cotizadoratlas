@@ -1810,9 +1810,8 @@ function editarCotizacion(id) {
   _cotizacionEditandoFolio = c.folio || c.id;
   renderCarrito();
   cerrarCotizacionModal();
-  setPage('cotizador');
-  const indBtn = document.querySelector('[onclick*="switchView(\'individual\')"]');
-  if (indBtn) indBtn.click();
+  navigateTo('cotizador');
+  showSubtab('individual');
   _uiAlert(`Editando ${c.folio || c.id}. Modifica y vuelve a guardar.`, 'info');
 }
 
@@ -1820,16 +1819,21 @@ async function autorizarCotizacion() {
   if (!_cotizacionAbierta || currentUser.rol !== 'admin') return;
   if (_cotizacionAbierta.estado === 'autorizada' || _cotizacionAbierta.autorizada) return;
 
-  // Verificar que no haya SKUs sin costo
-  const itemsSinCosto = (_cotizacionAbierta.items || []).filter(it =>
-    it.sinCosto && it.sinCosto.length > 0
-  );
+  // Verificar que no haya SKUs sin costo — usar catálogo actual, no datos guardados
+  const itemsSinCosto = (_cotizacionAbierta.items || []).filter(it => {
+    if (it.estado === 'err') return false;
+    const comps = bundleMap[it.sku] || [];
+    return comps.some(c => {
+      const entry = catalogoArticulosMap[String(c.componente ?? '').trim()];
+      return !entry?.ultimoCosto;
+    });
+  });
   if (itemsSinCosto.length > 0) {
     const lista = itemsSinCosto.map(it =>
-      `<div style="margin:4px 0">• <strong>${it.sku}</strong>: el SKU no tiene costo, favor de ingresar un costo para permitir la autorización.</div>`
+      `<div style="margin:4px 0">• <strong>${it.sku}</strong>: uno o más componentes sin costo en el catálogo de artículos.</div>`
     ).join('');
     await _uiConfirm(
-      `<div style="text-align:left">No es posible autorizar esta cotización. Los siguientes SKUs no tienen costo registrado:<br><br>${lista}</div>`,
+      `<div style="text-align:left">No es posible autorizar esta cotización. Los siguientes SKUs tienen componentes sin costo registrado:<br><br>${lista}</div>`,
       { icon: '🚫', okLabel: 'Entendido', danger: false }
     );
     return;
@@ -2468,8 +2472,26 @@ function renderCatalogoMetaDash() {
     const d = m.updatedAt?.toDate ? m.updatedAt.toDate() : new Date(m.updatedAt);
     return `${d.toLocaleDateString('es-MX')} · ${m.updatedBy ?? '—'} · ${(m.count ?? 0).toLocaleString()} reg.`;
   }
+  const totalArts = Object.keys(catalogoArticulosMap).length;
+  const conCosto = Object.values(catalogoArticulosMap).filter(a => a.ultimoCosto > 0).length;
+  const sinCosto = totalArts - conCosto;
+  const pctCosto = totalArts > 0 ? Math.round(conCosto / totalArts * 100) : 0;
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <div style="flex:1;background:var(--success-bg);border-radius:8px;padding:8px 6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--success)">${conCosto.toLocaleString()}</div>
+          <div style="font-size:9px;color:var(--success);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Con costo</div>
+        </div>
+        <div style="flex:1;background:${sinCosto > 0 ? 'var(--danger-bg)' : 'var(--success-bg)'};border-radius:8px;padding:8px 6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:${sinCosto > 0 ? 'var(--danger)' : 'var(--success)'}">${sinCosto.toLocaleString()}</div>
+          <div style="font-size:9px;color:${sinCosto > 0 ? 'var(--danger)' : 'var(--success)'};font-weight:700;text-transform:uppercase;letter-spacing:.04em">Sin costo</div>
+        </div>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:4px;overflow:hidden;margin-bottom:2px">
+        <div style="height:100%;width:${pctCosto}%;background:var(--success);transition:width .3s"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);text-align:center;margin-bottom:4px">${pctCosto}% del catálogo con costo</div>
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Artículos</div>
         <div style="font-size:12px;color:var(--text2);margin-top:1px">${fmtMeta(_catalogoMeta.articulos)}</div>
