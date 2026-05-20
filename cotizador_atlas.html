@@ -507,6 +507,7 @@ td.center{text-align:center}
 
           <button id="btnAgregarCarritoSidebar" class="btn btn-outline btn-full" onclick="agregarACarrito()" style="display:none;margin-top:8px">+ Agregar a cotización</button>
           <button id="btnGuardarCotizacionSidebar" class="btn btn-primary btn-full" onclick="guardarCotizacionIndividual()" style="display:none;margin-top:6px">💾 Guardar cotización</button>
+          <button id="btnActualizarItemSidebar" class="btn btn-primary btn-full" onclick="guardarActualizacionItem()" style="display:none;margin-top:8px">💾 Actualizar en cotización</button>
         </div>
 
         <!-- Main area -->
@@ -561,6 +562,7 @@ td.center{text-align:center}
                 </div>
                 <div id="r-psic-wrap"></div>
                 <div id="r-killer-wrap"></div>
+                <div id="r-apoyos-wrap"></div>
               </div>
             </div>
           </div>
@@ -1425,6 +1427,8 @@ async function verifyPassword(password, saltHex, storedHash) {
 let _cotizacionItems = [];
 let _cotizacionEditandoId = null;
 let _cotizacionEditandoFolio = null;
+let _editandoItemCotId = null;
+let _editandoItemIndex = null;
 
 function agregarACarrito() {
   const r = window._lastQuot;
@@ -1543,6 +1547,10 @@ function resetCotizadorView() {
   // oculta botones sidebar
   const btnAgr = document.getElementById('btnAgregarCarritoSidebar');
   if (btnAgr) btnAgr.style.display = 'none';
+  const btnUpd = document.getElementById('btnActualizarItemSidebar');
+  if (btnUpd) btnUpd.style.display = 'none';
+  _editandoItemCotId = null;
+  _editandoItemIndex = null;
   // limpia carrito
   limpiarCarrito();
   // limpia inputs de parámetros
@@ -1703,6 +1711,7 @@ function abrirCotizacion(id) {
   const items = c.items || [];
 
   const hasAny = items.some(it => it.estado !== 'err' && (it.killer || it.totalApoyoMarca > 0 || it.apoyoPromo > 0));
+  const puedeEditarItems = !isAutorizada && (currentUser.id === c.userId || currentUser.rol === 'admin');
   document.getElementById('cmItems').innerHTML = `
     <div class="table-wrap" style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1rem">
       <table>
@@ -1719,13 +1728,14 @@ function abrirCotizacion(id) {
             <th class="center">PSIC</th>
             ${hasAny ? '<th class="center">Extras</th>' : ''}
             <th class="center">Estado</th>
+            ${puedeEditarItems ? '<th></th>' : ''}
           </tr>
         </thead>
         <tbody>
-          ${items.map(it => {
+          ${items.map((it, idx) => {
             if (it.estado === 'err') return `<tr>
               <td class="mono-cell" style="font-size:12px">${it.sku}</td>
-              <td colspan="${hasAny?9:8}" style="color:var(--danger);font-size:12px">${it.msg || 'Error'}</td>
+              <td colspan="${hasAny?(puedeEditarItems?10:9):(puedeEditarItems?9:8)}" style="color:var(--danger);font-size:12px">${it.msg || 'Error'}</td>
             </tr>`;
             const hasKiller = !!it.killer;
             const hasMarca  = (it.totalApoyoMarca||0) > 0;
@@ -1735,8 +1745,11 @@ function abrirCotizacion(id) {
               hasMarca  ? `<span title="Apoyo marca: −${fmt(it.totalApoyoMarca)}" style="background:var(--success-bg);color:var(--success);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;cursor:default">AM</span>` : '',
               hasPromo  ? `<span title="Apoyo Promo: +${fmt(it.apoyoPromo)}" style="background:var(--warning-bg);color:var(--warning);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;cursor:default">AP</span>` : '',
             ].filter(Boolean).join(' ');
-            const psicBadge = `<span class="badge ${it.psicOk?'badge-success':'badge-danger'}" style="font-size:10px">${it.psicOk?'✓':'✗'} ${(it.psic*100).toFixed(1)}%</span>`;
+            const psicBadge = `<span class="badge ${it.psicOk?'badge-success':'badge-danger'}" style="font-size:10px">${it.psicOk?'✓':'✗'} ${((it.psic||0)*100).toFixed(1)}%</span>`;
             const estadoBadge = `<span class="badge ${it.psicOk&&!it.sinCosto?.length?'badge-success':'badge-warning'}" style="font-size:10px">${it.psicOk&&!it.sinCosto?.length?'OK':'Revisar'}</span>`;
+            const editBtn = puedeEditarItems
+              ? `<td class="center"><button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="editarItemDesdeCotizacion('${c.id}',${idx},'${it.sku}',${it.margen||18},${it.guias||1},${it.apoyoPromo||0})">✏️</button></td>`
+              : '';
             return `<tr>
               <td class="mono-cell" style="font-size:12px">${it.sku}</td>
               <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.descripcion||''}">${it.descripcion||'—'}</td>
@@ -1749,6 +1762,7 @@ function abrirCotizacion(id) {
               <td class="center">${psicBadge}</td>
               ${hasAny ? `<td class="center" style="white-space:nowrap;min-width:48px">${badges||'—'}</td>` : ''}
               <td class="center">${estadoBadge}</td>
+              ${editBtn}
             </tr>`;
           }).join('')}
         </tbody>
@@ -1807,6 +1821,70 @@ function editarCotizacion(id) {
   navigateTo('cotizador');
   showSubtab('individual');
   _uiAlert(`Editando ${c.folio || c.id}. Modifica y vuelve a guardar.`, 'info');
+}
+
+function editarItemDesdeCotizacion(cotId, itemIndex, sku, margen, guias, apoyoPromo) {
+  const c = _historialData.find(x => x.id === cotId);
+  if (!c || c.estado === 'autorizada' || c.autorizada) { _uiAlert('Esta cotización ya fue autorizada.', 'warning'); return; }
+  _editandoItemCotId = cotId;
+  _editandoItemIndex = itemIndex;
+  cerrarCotizacionModal();
+  navigateTo('cotizador');
+  showSubtab('individual');
+  // Set channel from saved cotización
+  const canalId = c.canalId;
+  if (canalId) {
+    const chSel = document.getElementById('channelTabsInd');
+    if (chSel) { chSel.value = canalId; selectChannel(canalId, 'ind'); }
+  }
+  // Pre-fill inputs
+  const skuEl = document.getElementById('skuSearch');
+  if (skuEl) skuEl.value = sku;
+  const margenEl = document.getElementById('margenInd');
+  if (margenEl) margenEl.value = margen || 18;
+  const guiasEl = document.getElementById('guiasInd');
+  if (guiasEl) guiasEl.value = guias || 1;
+  const guiasLabel = document.getElementById('guiasIndLabel');
+  if (guiasLabel) guiasLabel.textContent = guias || 1;
+  const apoyoEl = document.getElementById('apoyoPromoInd');
+  if (apoyoEl) apoyoEl.value = apoyoPromo > 0 ? apoyoPromo : '';
+  calcularIndividual(sku);
+  _uiAlert(`Editando SKU ${sku}. Ajusta los parámetros y presiona "Actualizar en cotización".`, 'info');
+}
+
+async function guardarActualizacionItem() {
+  const r = window._lastQuot;
+  if (!r || !_editandoItemCotId) return;
+  const cotRef = db.collection('cotizaciones').doc(_editandoItemCotId);
+  const cotSnap = await cotRef.get();
+  if (!cotSnap.exists) { _uiAlert('Cotización no encontrada.', 'danger'); return; }
+  const cotData = cotSnap.data();
+  const items = [...(cotData.items || [])];
+  const artEntry = catalogoArticulosMap[r.sku];
+  const descripcion = artEntry?.descripcion || r.componentes?.[0]?.descripcion || r.sku;
+  const killer = getActiveKiller(r.sku, currentChannel.id);
+  const killerInfo = killer ? { ...killer, importe: killer.tipoValor==='pct' ? r.precioVenta*(killer.valor/100) : killer.valor } : null;
+  items[_editandoItemIndex] = {
+    sku: r.sku, descripcion, canal: r.canal, canalId: currentChannel.id,
+    margen: r.margen, guias: r.guias || 1,
+    costoIva: r.costoIva, envio: r.envio,
+    precioLleno: r.precioLleno, precioVenta: r.precioVenta,
+    utilidad: r.utilidad, utilidadPct: r.utilidadPct,
+    apoyoPromo: r.apoyoPromo || 0, totalApoyoMarca: r.totalApoyoMarca || 0,
+    psicOk: r.psicOk, psic: r.psic, sinCosto: r.sinCosto || [],
+    canalGaRate: currentChannel.gaRate || 3, canalFactorPL: currentChannel.factorPL || 75,
+    killer: killerInfo, estado: r.psicOk ? 'ok' : 'warn'
+  };
+  const exitosos = items.filter(i => i.estado !== 'err').length;
+  const errores = items.filter(i => i.estado === 'err').length;
+  await cotRef.update({ items, exitosos, errores, updatedAt: Date.now() });
+  _editandoItemCotId = null;
+  _editandoItemIndex = null;
+  const btnUpd = document.getElementById('btnActualizarItemSidebar');
+  if (btnUpd) btnUpd.style.display = 'none';
+  _uiAlert('SKU actualizado correctamente en la cotización.', 'success');
+  navigateTo('historial');
+  await loadHistorial();
 }
 
 async function autorizarCotizacion() {
@@ -3492,6 +3570,35 @@ function calcularIndividual(skuOverride) {
     }
   }
 
+  // AM / AP indicators
+  const apoyosWrap = document.getElementById('r-apoyos-wrap');
+  if (apoyosWrap) {
+    let apoyosHtml = '';
+    if ((r.totalApoyoMarca||0) > 0) {
+      apoyosHtml += `<div style="background:var(--success-bg);border-left:3px solid var(--success);border-radius:6px;padding:10px 12px;margin-top:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--success)">AM · Apoyo de Marca activo</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Descuento sobre costo: <strong style="color:var(--success)">−${fmt(r.totalApoyoMarca)}</strong></div>
+      </div>`;
+    }
+    if ((r.apoyoPromo||0) > 0) {
+      apoyosHtml += `<div style="background:var(--warning-bg);border-left:3px solid var(--warning);border-radius:6px;padding:10px 12px;margin-top:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--warning)">AP · Apoyo Promocional</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Importe ingresado: <strong>${fmt(r.apoyoPromo)}</strong></div>
+      </div>`;
+    }
+    apoyosWrap.innerHTML = apoyosHtml;
+  }
+
+  // Modo edición de item: ajustar botones
+  const btnUpd = document.getElementById('btnActualizarItemSidebar');
+  const btnAgr2 = document.getElementById('btnAgregarCarritoSidebar');
+  if (_editandoItemCotId) {
+    if (btnUpd) btnUpd.style.display = 'block';
+    if (btnAgr2) btnAgr2.style.display = 'none';
+  } else {
+    if (btnUpd) btnUpd.style.display = 'none';
+  }
+
   // guardar última cotización para PDF y para agregar al carrito
   window._lastQuot = r;
 }
@@ -3680,10 +3787,10 @@ function renderMasivoTable(data) {
   body.innerHTML = data.map(r => {
     if(r.estado==='err') return `
       <tr><td class="mono-cell">${r.sku}</td><td>${r.descripcion||'—'}</td>
-      <td colspan="8" style="color:var(--danger);font-size:12px">${r.msg}</td>
+      <td colspan="7" style="color:var(--danger);font-size:12px">${r.msg}</td>
       <td class="center"><span class="badge badge-danger">Error</span></td></tr>`;
     const psicColor = r.psicOk?'var(--success)':'var(--danger)';
-    const psicText = (r.psic*100).toFixed(1)+'%';
+    const psicText = ((r.psic||0)*100).toFixed(1)+'%';
     const desc = catalogoArticulosMap[r.sku]?.descripcion || r.componentes[0]?.descripcion || '—';
     const hasKiller = !!r.killer;
     const hasMarca = (r.totalApoyoMarca||0) > 0;
@@ -3815,8 +3922,8 @@ function exportarPDFCotizacion() {
   const c = _cotizacionAbierta;
   if (!c) return;
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'landscape' });
-  const W=297, H=210, M=12, cW=W-M*2;
+  const doc = new jsPDF({ unit:'mm', format:'letter', orientation:'landscape' });
+  const W=279, H=216, M=12, cW=W-M*2;
   const autEn = c.autorizadoEn ? new Date(c.autorizadoEn).toLocaleDateString('es-MX') : '';
   const esAut = c.estado==='autorizada'||c.autorizada;
   _pdfHeader(doc,W,M,'Cotización '+c.canal, esAut?`AUTORIZADA · ${autEn} · por ${c.autorizadoPor||'admin'}`:'PENDIENTE DE AUTORIZACIÓN', c.folio||c.id, new Date(c.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'}), (c.userName||c.userEmail));
@@ -3825,12 +3932,12 @@ function exportarPDFCotizacion() {
   const items = (c.items||[]).filter(i=>i.estado!=='err');
   const hasExtras = items.some(it=>it.killer||(it.totalApoyoMarca>0)||(it.apoyoPromo>0));
 
-  // Tabla principal
+  // Tabla principal — columnas ajustadas a carta (255mm disponibles)
   const cols=[
-    {h:'SKU',w:32},{h:'Descripción',w:c.tipo==='masiva'?60:50},{h:'Costo c/IVA',w:24},{h:'Envío',w:18},
+    {h:'SKU',w:30},{h:'Descripción',w:c.tipo==='masiva'?56:48},{h:'Costo c/IVA',w:23},{h:'Envío',w:17},
     {h:'Margen',w:14},{h:'P. Lleno',w:22},{h:'P. Venta',w:22},{h:'Utilidad',w:18},{h:'PSIC',w:16},
   ];
-  if(hasExtras) cols.push({h:'Extras',w:16});
+  if(hasExtras) cols.push({h:'Extras',w:15});
   const tW=cols.reduce((s,c)=>s+c.w,0);
   const sx=M, rowH=5.5, headH=6.5;
 
@@ -3852,7 +3959,7 @@ function exportarPDFCotizacion() {
     const vals=[
       it.sku, (it.descripcion||'').substring(0,c.tipo==='masiva'?34:28),
       fmt(it.costoIva),fmt(it.envio),it.margen+'%',
-      fmt(it.precioLleno),fmt(it.precioVenta),fmtPct(it.utilidadPct),(it.psic*100).toFixed(1)+'%',
+      fmt(it.precioLleno),fmt(it.precioVenta),fmtPct(it.utilidadPct),((it.psic||0)*100).toFixed(1)+'%',
     ];
     if(hasExtras) vals.push(extBits.join(' ')||'—');
     let x=sx;
@@ -3868,19 +3975,27 @@ function exportarPDFCotizacion() {
     });
     y+=rowH;
     if(it.killer){
-      doc.setFontSize(5.5); doc.setFont('helvetica','italic'); doc.setTextColor(60,80,120);
-      doc.text(`  ↳ Killer ${it.killer.canalNombre||''}: −${it.killer.tipoValor==='pct'?it.killer.valor+'%':fmt(it.killer.importe)} · Precio real: ${fmt(it.precioVenta-it.killer.importe)}`,sx+2,y+2);
+      doc.setFontSize(5.5); doc.setFont('helvetica','italic'); doc.setTextColor(27,47,91);
+      doc.text(`  ↳ K — Killer ${it.killer.canalNombre||''}: −${it.killer.tipoValor==='pct'?it.killer.valor+'%':fmt(it.killer.importe)} · Precio real al consumidor: ${fmt(it.precioVenta-it.killer.importe)}`,sx+2,y+2);
+      y+=4;
+    }
+    if((it.totalApoyoMarca||0)>0){
+      doc.setFontSize(5.5); doc.setFont('helvetica','italic'); doc.setTextColor(26,107,58);
+      doc.text(`  ↳ AM — Apoyo de Marca: descuento sobre costo −${fmt(it.totalApoyoMarca)}`,sx+2,y+2);
+      y+=4;
+    }
+    if((it.apoyoPromo||0)>0){
+      doc.setFontSize(5.5); doc.setFont('helvetica','italic'); doc.setTextColor(140,80,0);
+      doc.text(`  ↳ AP — Apoyo Promocional: +${fmt(it.apoyoPromo)}`,sx+2,y+2);
       y+=4;
     }
   });
 
   // Totales
   doc.setDrawColor(180,185,200); doc.setLineWidth(0.3); doc.line(sx,y,sx+tW,y); y+=4;
-  const totalV=items.reduce((s,i)=>s+i.precioVenta,0);
   const avgU=items.length?items.reduce((s,i)=>s+(i.utilidadPct||0),0)/items.length:0;
   doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(27,47,91);
-  doc.text(`Precio venta total: ${fmt(totalV)}`,sx+tW-2,y,{align:'right'});
-  doc.text(`Utilidad promedio: ${fmtPct(avgU)}`,sx+tW-2,y+5,{align:'right'}); y+=12;
+  doc.text(`Utilidad promedio: ${fmtPct(avgU)}`,sx+tW-2,y,{align:'right'}); y+=8;
 
   if(!esAut){y=_pdfFirmas(doc,W,M,cW,y);}
 
@@ -4067,10 +4182,10 @@ function generarPDF() {
   doc.setTextColor(180,195,230); doc.setFontSize(7); doc.setFont('helvetica','normal');
   doc.text('UTILIDAD  ·  PSIC',rbx+rbw/2,rby+24,{align:'center'});
   doc.setFontSize(9); doc.setFont('helvetica','bold');
-  doc.setTextColor(r.utilidadPct>0.15?[140,232,187]:[245,190,100]);
+  doc.setTextColor(...(r.utilidadPct>0.15?[140,232,187]:[245,190,100]));
   doc.text(fmtPct(r.utilidadPct),rbx+rbw/2-10,rby+31,{align:'center'});
-  doc.setTextColor(r.psicOk?[140,232,187]:[245,130,130]);
-  doc.text((r.psic*100).toFixed(1)+'%',rbx+rbw/2+12,rby+31,{align:'center'});
+  doc.setTextColor(...(r.psicOk?[140,232,187]:[245,130,130]));
+  doc.text(((r.psic||0)*100).toFixed(1)+'%',rbx+rbw/2+12,rby+31,{align:'center'});
   y=yBox+44;
 
   // Killer
@@ -4151,7 +4266,7 @@ function exportarPDFMasivo() {
       fmt(r.precioLleno),
       fmt(r.precioVenta),
       fmtPct(r.utilidadPct),
-      (r.psic*100).toFixed(1)+'%',
+      ((r.psic||0)*100).toFixed(1)+'%',
       r.estado==='ok'?'OK':'Revisar',
     ];
     let x = startX;
