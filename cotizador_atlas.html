@@ -609,6 +609,7 @@ td.center{text-align:center}
             <div style="font-size:11px;color:var(--text3);margin-top:8px" id="masColsDesc"></div>
             <button class="btn btn-outline btn-sm btn-full" style="margin-top:10px" onclick="descargarPlantilla()">↓ Descargar plantilla</button>
           </div>
+          <button id="btnGuardarCotizacionMasiva" class="btn btn-primary btn-full" onclick="guardarCotizacionMasiva()" style="display:none;margin-top:8px">💾 Guardar cotización</button>
         </div>
 
         <div>
@@ -627,21 +628,14 @@ td.center{text-align:center}
 
           <div id="masResults" class="hidden">
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem" id="masMetrics"></div>
-            <div class="flex-between mb-12">
-              <div class="flex gap-8">
-                <input class="input input-sm" placeholder="Buscar SKU..." id="masSearch" style="width:200px" oninput="filtrarMasivo()">
-                <select class="input input-sm" id="masFilter" style="width:130px" onchange="filtrarMasivo()">
-                  <option value="all">Todos</option>
-                  <option value="ok">OK</option>
-                  <option value="warn">PSIC inválido</option>
-                  <option value="err">Sin costo</option>
-                </select>
-              </div>
-              <div class="flex gap-8">
-                <button class="btn btn-outline btn-sm" onclick="exportarExcel()">↓ Excel completo</button>
-                <button class="btn btn-red btn-sm" onclick="exportarPDFMasivo()">📄 PDF resumen Finanzas</button>
-                <button class="btn btn-primary btn-sm" onclick="guardarCotizacionMasiva()">💾 Guardar cotización</button>
-              </div>
+            <div class="flex gap-8 mb-12">
+              <input class="input input-sm" placeholder="Buscar SKU..." id="masSearch" style="width:200px" oninput="filtrarMasivo()">
+              <select class="input input-sm" id="masFilter" style="width:130px" onchange="filtrarMasivo()">
+                <option value="all">Todos</option>
+                <option value="ok">OK</option>
+                <option value="warn">PSIC inválido</option>
+                <option value="err">Sin costo</option>
+              </select>
             </div>
             <div class="table-wrap">
               <table>
@@ -710,7 +704,7 @@ td.center{text-align:center}
     </div>
     <div class="card" style="margin-bottom:16px;padding:14px 16px">
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <input class="input" id="histBuscar" placeholder="Buscar folio, SKU o descripción..." oninput="renderHistorial()" style="min-width:180px;flex:1">
+        <input class="input" id="histBuscar" placeholder="Buscar folio, SKU o descripción..." oninput="renderHistorial()" style="min-width:180px;flex:1" autocomplete="off">
         <select class="input" id="histCanal" onchange="renderHistorial()" style="width:150px"><option value="">Todos los canales</option></select>
         <select class="input" id="histTipo" onchange="renderHistorial()" style="width:150px">
           <option value="">Individual y Masiva</option>
@@ -1526,6 +1520,8 @@ function resetMasivoView() {
   // ocultar resultados
   const masRes = document.getElementById('masResults');
   if (masRes) masRes.classList.add('hidden');
+  const btnMas = document.getElementById('btnGuardarCotizacionMasiva');
+  if (btnMas) btnMas.style.display = 'none';
   // reset progress
   const pw = document.getElementById('progressWrap');
   if (pw) pw.style.display = 'none';
@@ -1839,6 +1835,25 @@ async function autorizarCotizacion() {
     return;
   }
 
+  // Verificar margen mínimo por canal
+  const canalObj = canales.find(c => c.nombre === _cotizacionAbierta.canal || c.id === _cotizacionAbierta.canalId);
+  const margenMinimo = canalObj?.margenMinimo ?? null;
+  if (margenMinimo != null) {
+    const itemsBajoMargen = (_cotizacionAbierta.items || []).filter(it =>
+      it.estado !== 'err' && it.margen != null && it.margen < margenMinimo
+    );
+    if (itemsBajoMargen.length > 0) {
+      const lista = itemsBajoMargen.map(it =>
+        `<div style="margin:4px 0">• <strong>${it.sku}</strong>: margen ${it.margen}% (mínimo ${margenMinimo}%)</div>`
+      ).join('');
+      await _uiConfirm(
+        `<div style="text-align:left">No es posible autorizar. Los siguientes SKUs tienen margen por debajo del mínimo permitido (${margenMinimo}%) para el canal <strong>${_cotizacionAbierta.canal}</strong>:<br><br>${lista}</div>`,
+        { icon: '🚫', okLabel: 'Entendido', danger: false }
+      );
+      return;
+    }
+  }
+
   const pass = await _uiPromptPassword(`Ingresa tu contraseña para autorizar la cotización <strong>${_cotizacionAbierta.folio || _cotizacionAbierta.id}</strong>:`);
   if (pass === null) return;
 
@@ -1887,6 +1902,8 @@ async function getNextFolio() {
 let _historialData = [];
 
 async function loadHistorial() {
+  const buscarEl = document.getElementById('histBuscar');
+  if (buscarEl) buscarEl.value = '';
   document.getElementById('historialLoading').style.display = 'block';
   document.getElementById('historialEmpty').style.display = 'none';
   document.getElementById('historialBody').innerHTML = '';
@@ -3641,6 +3658,8 @@ async function procesarArchivo(file) {
 function renderMasivo() {
   const res = document.getElementById('masResults');
   res.classList.remove('hidden');
+  const btnMas = document.getElementById('btnGuardarCotizacionMasiva');
+  if (btnMas) btnMas.style.display = 'block';
   masivoFiltered = [...masivoResultados];
 
   const ok = masivoResultados.filter(r=>r.estado==='ok').length;
