@@ -1584,6 +1584,24 @@ function limpiarCarrito() {
   renderCarrito();
 }
 
+function resetMasivoView() {
+  masivoResultados = [];
+  masivoFiltered = [];
+  // reset file input
+  const fi = document.getElementById('fileInput');
+  if (fi) fi.value = '';
+  // ocultar resultados
+  const masRes = document.getElementById('masResults');
+  if (masRes) masRes.classList.add('hidden');
+  // reset progress
+  const pw = document.getElementById('progressWrap');
+  if (pw) pw.style.display = 'none';
+  const pf = document.getElementById('progressFill');
+  if (pf) pf.style.width = '0%';
+  const pl = document.getElementById('progressLabel');
+  if (pl) pl.textContent = 'Procesando...';
+}
+
 function resetCotizadorView() {
   // limpia búsqueda
   const skuInp = document.getElementById('skuSearch');
@@ -1731,6 +1749,7 @@ async function guardarCotizacionMasiva() {
   try {
     await guardarCotizacion(data);
     _historialData.unshift(data);
+    resetMasivoView();
     _uiAlert(`Cotización ${folio} guardada. Pendiente de autorización.`, 'success');
   } finally {
     _hideSaving();
@@ -3755,6 +3774,14 @@ async function procesarArchivo(file) {
 
     // Margen y envío vienen por fila del Excel
     const margen = parseFloat(row['MargenOferta'])||18;
+
+    // Validar margen mínimo del canal
+    if (ch.margenMinimo != null && margen < ch.margenMinimo) {
+      pw.style.display = 'none';
+      _uiAlert(`Fila ${i+1} (SKU: ${sku}): margen ${margen}% atenta a la política de margen mínimo (${ch.margenMinimo}%). Corrige el archivo y vuelve a cargarlo.`, 'error');
+      masivoResultados = [];
+      return;
+    }
 
     let guias = '1';
     let envioOverride;
