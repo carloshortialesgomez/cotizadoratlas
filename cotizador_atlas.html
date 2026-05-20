@@ -226,6 +226,7 @@ td.center{text-align:center}
 /* ====== MODAL ====== */
 .modal-overlay{position:fixed;inset:0;background:rgba(10,18,40,0.55);z-index:500;display:none;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
+#uiConfirmModal{z-index:9996}
 .modal{background:var(--surface);border-radius:var(--radius-xl);padding:2rem;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto}
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
 .modal-title{font-size:17px;font-weight:700;color:var(--atlas-navy)}
@@ -493,7 +494,7 @@ td.center{text-align:center}
             <div class="field">
               <label class="field-label">Margen campaña %</label>
               <input class="input" type="number" id="margenInd" value="18" min="1" max="60" step="0.5" oninput="calcularIndividual()">
-              <div id="margenWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--warning);font-weight:600;display:none">⚠ El margen ingresado atenta a la política de margen mínimo</div>
+              <div id="margenWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--warning);font-weight:600">⚠ El margen ingresado atenta a la política de margen mínimo</div>
             </div>
             <div id="livParamsInd">
               <!-- populated dynamically by updateChannelParamUI -->
@@ -3264,7 +3265,12 @@ function loadDemoData() {
    CHANNEL TABS
 ============================================= */
 function buildChannelTabs() {
-  ['channelTabsInd','channelTabsMas'].forEach((id, idx) => {
+  // Refrescar la referencia de currentChannel desde el arreglo actualizado
+  if (currentChannel) {
+    const refreshed = canales.find(c => c.id === currentChannel.id);
+    if (refreshed) currentChannel = refreshed;
+  }
+  ['channelTabsInd','channelTabsMas'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.innerHTML = canales.map(ch =>
@@ -3280,12 +3286,18 @@ function buildChannelTabs() {
 function selectChannel(chId, scope) {
   const ch = canales.find(c => c.id === chId);
   if (!ch) return;
-  currentChannel = ch;
-  // keep both selects in sync
+  currentChannel = ch; // siempre apunta al objeto vivo del arreglo
   const otherId = scope === 'ind' ? 'channelTabsMas' : 'channelTabsInd';
   const other = document.getElementById(otherId);
   if (other) other.value = chId;
   updateChannelParamUI(scope);
+  // resetear warning de margen al cambiar canal
+  const margenWarnEl = document.getElementById('margenWarn');
+  if (margenWarnEl) {
+    const margen = parseFloat(document.getElementById('margenInd')?.value) || 18;
+    const minimo = ch.margenMinimo;
+    margenWarnEl.style.display = (minimo != null && margen < minimo) ? 'block' : 'none';
+  }
   if (scope === 'ind') calcularIndividual();
 }
 
