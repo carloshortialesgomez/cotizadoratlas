@@ -3397,7 +3397,7 @@ function calcularIndividual(skuOverride) {
   if (btnAgr) btnAgr.style.display = 'block';
 
   document.getElementById('r-sku').textContent = sku;
-  document.getElementById('r-desc').textContent = r.componentes[0]?.descripcion||sku;
+  document.getElementById('r-desc').textContent = catalogoArticulosMap[sku]?.descripcion || r.componentes[0]?.descripcion || sku;
   document.getElementById('r-meta').textContent = `${r.canal} · ${r.componentes.length} componentes`;
   document.getElementById('r-canal-badge').className = 'badge ' + (currentChannel.id==='liverpool'?'badge-red':'badge-navy');
   document.getElementById('r-canal-badge').textContent = r.canal;
