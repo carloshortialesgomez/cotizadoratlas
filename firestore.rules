@@ -19,6 +19,21 @@ service cloud.firestore {
     match /catalogoMeta/{docId} {
       allow read, write: if true;
     }
+    match /catalogoArticulos/{docId} {
+      allow read, write: if true;
+    }
+    match /canales/{docId} {
+      allow read, write: if true;
+    }
+    match /presencia/{docId} {
+      allow read, write: if true;
+    }
+    match /killers/{docId} {
+      allow read, write: if true;
+    }
+    match /apoyoMarca/{docId} {
+      allow read, write: if true;
+    }
     match /{document=**} {
       allow read, write: if false;
     }
