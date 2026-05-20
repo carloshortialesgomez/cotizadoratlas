@@ -476,7 +476,7 @@ td.center{text-align:center}
         <div class="quot-sidebar">
           <div class="card">
             <div class="section-label">Canal de venta</div>
-            <div class="channel-tabs" id="channelTabsInd" style="grid-template-columns:1fr"></div>
+            <select class="input" id="channelTabsInd" onchange="selectChannel(this.value,'ind')"></select>
           </div>
 
           <div class="card">
@@ -493,6 +493,7 @@ td.center{text-align:center}
             <div class="field">
               <label class="field-label">Margen campaña %</label>
               <input class="input" type="number" id="margenInd" value="18" min="1" max="60" step="0.5" oninput="calcularIndividual()">
+              <div id="margenWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--warning);font-weight:600;display:none">⚠ El margen ingresado atenta a la política de margen mínimo</div>
             </div>
             <div id="livParamsInd">
               <!-- populated dynamically by updateChannelParamUI -->
@@ -599,7 +600,7 @@ td.center{text-align:center}
         <div>
           <div class="card mb-16">
             <div class="section-label">Canal de venta</div>
-            <div class="channel-tabs" id="channelTabsMas" style="grid-template-columns:1fr"></div>
+            <select class="input" id="channelTabsMas" onchange="selectChannel(this.value,'mas')"></select>
           </div>
           <div class="card">
             <div class="section-label">Columnas requeridas en Excel</div>
@@ -1285,6 +1286,10 @@ td.center{text-align:center}
       <label class="field-label">Gasto maniobra $</label>
       <input class="input" type="number" id="mc-maniobra" value="116">
     </div>
+    <div class="field">
+      <label class="field-label">Margen mínimo % <span style="font-weight:400;color:var(--text3)">(vacío = sin mínimo)</span></label>
+      <input class="input" type="number" id="mc-margenMin" placeholder="18" step="0.5" min="0" max="60">
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalCanal')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarCanal()">Guardar canal</button>
@@ -1528,6 +1533,7 @@ function agregarACarrito() {
     utilidadPct: r.utilidadPct,
     psicOk: r.psicOk,
     psic: r.psic,
+    sinCosto: r.sinCosto || [],
     canalGaRate: currentChannel.gaRate || 3,
     canalFactorPL: currentChannel.factorPL || 75,
     canalTipoEnvio: currentChannel.tipoEnvio,
@@ -1575,6 +1581,31 @@ function limpiarCarrito() {
   _cotizacionEditandoId = null;
   _cotizacionEditandoFolio = null;
   renderCarrito();
+}
+
+function resetCotizadorView() {
+  // limpia búsqueda
+  const skuInp = document.getElementById('skuSearch');
+  if (skuInp) skuInp.value = '';
+  const skuRes = document.getElementById('skuResults');
+  if (skuRes) skuRes.innerHTML = '';
+  // oculta resultados y muestra estado vacío
+  document.getElementById('bundleInfo')?.classList.add('hidden');
+  document.getElementById('bundleEmpty')?.classList.remove('hidden');
+  // oculta botones sidebar
+  const btnAgr = document.getElementById('btnAgregarCarritoSidebar');
+  if (btnAgr) btnAgr.style.display = 'none';
+  // limpia carrito
+  limpiarCarrito();
+  // limpia inputs de parámetros
+  const margenInp = document.getElementById('margenInd');
+  if (margenInp) margenInp.value = 18;
+  const apoyoPromo = document.getElementById('apoyoPromoInd');
+  if (apoyoPromo) apoyoPromo.value = '';
+  const margenWarn = document.getElementById('margenWarn');
+  if (margenWarn) margenWarn.style.display = 'none';
+  // limpia resultados internos
+  window._lastQuot = null;
 }
 
 async function guardarCotizacionIndividual() {
@@ -1625,9 +1656,7 @@ async function guardarCotizacionIndividual() {
     await guardarCotizacion(data);
     const idx = _historialData.findIndex(c => c.id === docId);
     if (idx >= 0) _historialData[idx] = data; else _historialData.unshift(data);
-    _cotizacionEditandoId = docId;
-    _cotizacionEditandoFolio = folio;
-    renderCarrito();
+    resetCotizadorView();
     _uiAlert(`Cotización ${folio} guardada. Pendiente de autorización.`, 'success');
   } finally {
     _hideSaving();
@@ -1671,6 +1700,7 @@ async function guardarCotizacionMasiva() {
       utilidad: r.utilidad || 0,
       utilidadPct: r.utilidadPct || 0,
       psicOk: r.psicOk || false,
+      sinCosto: r.sinCosto || [],
       canalGaRate: currentChannel.gaRate || 3,
       canalFactorPL: currentChannel.factorPL || 75,
       killer: killerInfo,
@@ -1836,6 +1866,21 @@ function editarCotizacion(id) {
 async function autorizarCotizacion() {
   if (!_cotizacionAbierta || currentUser.rol !== 'admin') return;
   if (_cotizacionAbierta.estado === 'autorizada' || _cotizacionAbierta.autorizada) return;
+
+  // Verificar que no haya SKUs sin costo
+  const itemsSinCosto = (_cotizacionAbierta.items || []).filter(it =>
+    it.sinCosto && it.sinCosto.length > 0
+  );
+  if (itemsSinCosto.length > 0) {
+    const lista = itemsSinCosto.map(it =>
+      `<div style="margin:4px 0">• <strong>${it.sku}</strong>: el SKU no tiene costo, favor de ingresar un costo para permitir la autorización.</div>`
+    ).join('');
+    await _uiConfirm(
+      `<div style="text-align:left">No es posible autorizar esta cotización. Los siguientes SKUs no tienen costo registrado:<br><br>${lista}</div>`,
+      { icon: '🚫', okLabel: 'Entendido', danger: false }
+    );
+    return;
+  }
 
   const pass = await _uiPromptPassword(`Ingresa tu contraseña para autorizar la cotización <strong>${_cotizacionAbierta.folio || _cotizacionAbierta.id}</strong>:`);
   if (pass === null) return;
@@ -3219,34 +3264,29 @@ function loadDemoData() {
    CHANNEL TABS
 ============================================= */
 function buildChannelTabs() {
-  ['channelTabsInd','channelTabsMas'].forEach((id,idx) => {
+  ['channelTabsInd','channelTabsMas'].forEach((id, idx) => {
     const el = document.getElementById(id);
-    el.innerHTML = '';
-    el.style.gridTemplateColumns = `repeat(${canales.length},1fr)`;
-    canales.forEach((ch,i) => {
-      const b = document.createElement('button');
-      b.className = 'channel-tab' + (i===0?' active-ch':'');
-      b.dataset.chId = ch.id;
-      b.textContent = ch.nombre;
-      b.onclick = () => selectChannel(ch.id, idx===0?'ind':'mas');
-      el.appendChild(b);
-    });
-    if(canales.length>0 && !currentChannel) currentChannel = canales[0];
+    if (!el) return;
+    el.innerHTML = canales.map(ch =>
+      `<option value="${ch.id}">${ch.nombre}</option>`
+    ).join('');
+    if (canales.length > 0 && !currentChannel) currentChannel = canales[0];
+    if (currentChannel) el.value = currentChannel.id;
   });
   updateChannelParamUI('ind');
   updateChannelParamUI('mas');
 }
 
 function selectChannel(chId, scope) {
-  const ch = canales.find(c=>c.id===chId);
-  if(!ch) return;
+  const ch = canales.find(c => c.id === chId);
+  if (!ch) return;
   currentChannel = ch;
-  const containerId = scope==='ind'?'channelTabsInd':'channelTabsMas';
-  document.querySelectorAll(`#${containerId} .channel-tab`).forEach(b=>{
-    b.classList.toggle('active-ch', b.dataset.chId===chId);
-  });
+  // keep both selects in sync
+  const otherId = scope === 'ind' ? 'channelTabsMas' : 'channelTabsInd';
+  const other = document.getElementById(otherId);
+  if (other) other.value = chId;
   updateChannelParamUI(scope);
-  if(scope==='ind') calcularIndividual();
+  if (scope === 'ind') calcularIndividual();
 }
 
 function updateChannelParamUI(scope) {
@@ -3482,6 +3522,13 @@ function calcularIndividual(skuOverride) {
   if(!currentChannel) return;
 
   const margen = parseFloat(document.getElementById('margenInd').value)||18;
+
+  // warning margen mínimo
+  const margenWarnEl = document.getElementById('margenWarn');
+  if (margenWarnEl) {
+    const minimo = currentChannel.margenMinimo;
+    margenWarnEl.style.display = (minimo != null && margen < minimo) ? 'block' : 'none';
+  }
   const guias = document.getElementById('guiasInd')?.value || '1';
   let envioOverride;
   if(currentChannel.tipoEnvio==='guias') envioOverride = undefined;
@@ -4522,6 +4569,7 @@ function editarCanal(id) {
   document.getElementById('mc-gaRate').value = ch.gaRate ?? 3;
   document.getElementById('mc-psic').value = ch.psicMin;
   document.getElementById('mc-maniobra').value = ch.maniobra||116;
+  document.getElementById('mc-margenMin').value = ch.margenMinimo ?? '';
   toggleEnvioFields();
   openModal('modalCanal');
 }
@@ -4545,6 +4593,7 @@ function abrirNuevoCanal() {
   document.getElementById('mc-gaRate').value = 3;
   document.getElementById('mc-psic').value = -0.75;
   document.getElementById('mc-maniobra').value = 116;
+  document.getElementById('mc-margenMin').value = 18;
   toggleEnvioFields();
   openModal('modalCanal');
 }
@@ -4569,6 +4618,9 @@ function guardarCanal() {
     gaRate: parseFloat(document.getElementById('mc-gaRate').value)||3,
     psicMin: parseFloat(document.getElementById('mc-psic').value)||-0.75,
     maniobra: parseFloat(document.getElementById('mc-maniobra').value)||116,
+    margenMinimo: document.getElementById('mc-margenMin').value.trim() !== ''
+      ? parseFloat(document.getElementById('mc-margenMin').value)
+      : null,
   };
   if(editingChannelId){
     const idx = canales.findIndex(c=>c.id===editingChannelId);
