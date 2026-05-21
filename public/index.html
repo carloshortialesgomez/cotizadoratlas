@@ -3946,7 +3946,7 @@ function exportarPDFCotizacion() {
   const autEn = c.autorizadoEn ? new Date(c.autorizadoEn).toLocaleDateString('es-MX') : '';
   const esAut = c.estado==='autorizada'||c.autorizada;
   _pdfHeader(doc,W,M,'Cotización '+c.canal, esAut?`AUTORIZADA · ${autEn} · por ${c.autorizadoPor||'admin'}`:'PENDIENTE DE AUTORIZACIÓN', c.folio||c.id, new Date(c.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'}), (c.userName||c.userEmail));
-  let y=38;
+  let y=24;
 
   const items = (c.items||[]).filter(i=>i.estado!=='err');
   const hasExtras = items.some(it=>it.killer||(it.totalApoyoMarca>0)||(it.apoyoPromo>0));
@@ -3960,14 +3960,14 @@ function exportarPDFCotizacion() {
   const tW=cols.reduce((s,c)=>s+c.w,0);
   const sx=M, rowH=5.5, headH=6.5;
 
-  doc.setFillColor(27,47,91); doc.rect(sx,y,tW,headH,'F');
+  doc.setFillColor(200,32,47); doc.rect(sx,y,tW,headH,'F');
   doc.setTextColor(255,255,255); doc.setFontSize(6.5); doc.setFont('helvetica','bold');
   let cx=sx;
   cols.forEach(col=>{doc.text(col.h,cx+2,y+4.5);cx+=col.w;});
   y+=headH;
 
   items.forEach((it,i)=>{
-    if(y+rowH>H-50){doc.addPage();_pdfHeader(doc,W,M,'Cotización '+c.canal,'(continuación)',c.folio||c.id,'','');y=38;}
+    if(y+rowH>H-50){doc.addPage();_pdfHeader(doc,W,M,'Cotización '+c.canal,'(continuación)',c.folio||c.id,'','');y=24;}
     if(i%2===0){doc.setFillColor(247,249,253);doc.rect(sx,y,tW,rowH,'F');}
     doc.setFontSize(6); doc.setFont('helvetica','normal');
     const psicOk=it.psicOk;
@@ -4048,29 +4048,29 @@ function descargarCatalogoEnvios() {
    GENERACIÓN DE PDF
 ============================================= */
 function _pdfHeader(doc, W, M, title, subtitle, folio, fecha, autor) {
-  doc.setFillColor(27,47,91);
-  doc.rect(0,0,W,34,'F');
+  doc.setFillColor(200,32,47);
+  doc.rect(0,0,W,20,'F');
   // Logo
   try {
     const logoEl = document.querySelector('img[src="src/Logo.png"]');
-    if (logoEl && logoEl.complete) doc.addImage(logoEl,'PNG',M,4,44,24);
+    if (logoEl && logoEl.complete) doc.addImage(logoEl,'PNG',M,3,30,14);
     else throw new Error();
   } catch(_) {
-    doc.setFillColor(200,32,47);
-    doc.roundedRect(M,6,20,18,2,2,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
-    doc.text('ATLAS',M+10,17,{align:'center'});
+    doc.setFillColor(255,255,255);
+    doc.roundedRect(M,3,20,13,2,2,'F');
+    doc.setTextColor(200,32,47); doc.setFontSize(7); doc.setFont('helvetica','bold');
+    doc.text('ATLAS',M+10,12,{align:'center'});
   }
   doc.setTextColor(255,255,255);
-  doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text(title, M+50, 13);
-  doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(180,195,230);
-  doc.text(subtitle, M+50, 20);
-  doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont('helvetica','bold');
-  doc.text(folio, W-M, 11, {align:'right'});
-  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(180,195,230);
-  doc.text(fecha, W-M, 17, {align:'right'});
-  doc.text(autor, W-M, 23, {align:'right'});
+  doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text(title, M+36, 9);
+  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(255,210,210);
+  doc.text(subtitle, M+36, 15);
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text(folio, W-M, 8, {align:'right'});
+  doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.setTextColor(255,210,210);
+  doc.text(fecha, W-M, 13, {align:'right'});
+  doc.text(autor, W-M, 18, {align:'right'});
 }
 
 function _pdfFirmas(doc, W, M, cW, y) {
@@ -4111,7 +4111,7 @@ function generarPDF() {
   const bundleDesc = catalogoArticulosMap[r.sku]?.descripcion || r.componentes[0]?.descripcion || r.sku;
 
   _pdfHeader(doc,W,M,'Cotización de venta','PENDIENTE DE AUTORIZACIÓN · Vigencia 15 días',folio,fecha,'Elaboró: '+currentUser.nombre);
-  let y=38;
+  let y=24;
 
   // Info strip
   doc.setFillColor(200,32,47);
@@ -4259,7 +4259,7 @@ function exportarPDFMasivo() {
   const rowH = 5.5, headH = 6.5;
 
   const drawTableHeader = (y) => {
-    doc.setFillColor(60,70,90);
+    doc.setFillColor(200,32,47);
     doc.rect(startX, y, totalW, headH,'F');
     doc.setTextColor(255,255,255);
     doc.setFontSize(6.5); doc.setFont('helvetica','bold');
@@ -4306,7 +4306,7 @@ function exportarPDFMasivo() {
 
   // ── Página 1 ──
   drawHeader();
-  let y = 38;
+  let y = 24;
 
   // Métricas resumen
   const ok   = masivoResultados.filter(r=>r.estado==='ok').length;
@@ -4334,7 +4334,7 @@ function exportarPDFMasivo() {
       // nueva página
       doc.addPage();
       drawHeader();
-      y = 32;
+      y = 24;
       y = drawTableHeader(y);
       rowIdx = 0;
     }
@@ -4357,7 +4357,7 @@ function exportarPDFMasivo() {
   y += 14;
 
   // FIRMAS
-  if(y + 40 > H-10){ doc.addPage(); drawHeader(); y=36; }
+  if(y + 40 > H-10){ doc.addPage(); drawHeader(); y=24; }
   doc.setDrawColor(200,32,47); doc.setLineWidth(0.8);
   doc.line(M, y, M+cW, y); doc.setLineWidth(0.2); y+=5;
   doc.setTextColor(200,32,47); doc.setFontSize(8); doc.setFont('helvetica','bold');
