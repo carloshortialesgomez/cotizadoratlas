@@ -1551,6 +1551,8 @@ function resetCotizadorView() {
   if (btnUpd) btnUpd.style.display = 'none';
   _editandoItemCotId = null;
   _editandoItemIndex = null;
+  const chSel = document.getElementById('channelTabsInd');
+  if (chSel) chSel.disabled = false;
   // limpia carrito
   limpiarCarrito();
   // limpia inputs de parámetros
@@ -1832,11 +1834,13 @@ function editarItemDesdeCotizacion(cotId, itemIndex, sku, margen, guias, apoyoPr
   cerrarCotizacionModal();
   navigateTo('cotizador');
   showSubtab('individual');
-  // Set channel from saved cotización
+  // Fijar canal del original — no se puede cambiar al editar
   const canalId = c.canalId;
-  if (canalId) {
-    const chSel = document.getElementById('channelTabsInd');
-    if (chSel) { chSel.value = canalId; selectChannel(canalId, 'ind'); }
+  const chSel = document.getElementById('channelTabsInd');
+  if (canalId && chSel) {
+    chSel.value = canalId;
+    chSel.disabled = true;
+    selectChannel(canalId, 'ind');
   }
   // Pre-fill inputs
   const skuEl = document.getElementById('skuSearch');
@@ -1889,6 +1893,8 @@ async function guardarActualizacionItem() {
     _editandoItemIndex = null;
     const btnUpd = document.getElementById('btnActualizarItemSidebar');
     if (btnUpd) btnUpd.style.display = 'none';
+    const chSelPost = document.getElementById('channelTabsInd');
+    if (chSelPost) chSelPost.disabled = false;
     navigateTo('historial');
     await loadHistorial();
     abrirCotizacion(cotIdActual);
