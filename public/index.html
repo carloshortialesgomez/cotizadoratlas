@@ -1120,6 +1120,100 @@ td.center{text-align:center}
     </div>
   </div>
 
+  <!-- ===== PAGE: SIMULADOR ===== -->
+  <div class="page" id="page-simulador">
+    <div class="page-header">
+      <div class="page-title">Simulador Multi-Canal</div>
+      <div class="page-sub">Arma un bundle, define parámetros y compara resultados en todos los canales activos</div>
+    </div>
+
+    <!-- Fila superior: configuración + resultados -->
+    <div style="display:grid;grid-template-columns:320px 1fr;gap:1.25rem;align-items:start">
+
+      <!-- Panel izquierdo: SKUs + parámetros -->
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">📦</div>Artículos del bundle</div>
+          <div class="field" style="position:relative">
+            <label class="field-label">Buscar artículo</label>
+            <input class="input" id="simSkuInput" placeholder="SKU o descripción..." autocomplete="off"
+              oninput="simSearchSku(this.value)"
+              onblur="setTimeout(()=>{const d=document.getElementById('simSkuDropdown');if(d)d.style.display='none'},200)">
+            <div id="simSkuDropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;display:none;max-height:220px;overflow-y:auto;margin-top:2px"></div>
+          </div>
+          <div id="simSkuList" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:10px 0">Agrega artículos para simular</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-icon">⚙️</div>Parámetros</div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Margen %</label>
+              <input class="input" type="number" id="simMargen" value="18" min="1" max="60" step="0.5">
+            </div>
+            <div class="field">
+              <label class="field-label">Guías</label>
+              <input class="input" type="number" id="simGuias" value="1" min="1" max="5" step="1">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Apoyo Promo ($)</label>
+            <input class="input" type="number" id="simApoyoPromo" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <button class="btn btn-primary btn-full" onclick="simularCanales()" style="margin-top:6px">⚡ Simular en todos los canales</button>
+        </div>
+      </div>
+
+      <!-- Panel derecho: resultados por canal -->
+      <div id="simResultados">
+        <div class="card" style="text-align:center;color:var(--text3);padding:2.5rem 1rem">
+          Agrega al menos un artículo y presiona <strong>Simular</strong>
+        </div>
+      </div>
+
+    </div><!-- /grid -->
+
+    <!-- Fila inferior: búsqueda de competidores (ancho completo) -->
+    <div style="margin-top:1.25rem">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+          <div class="card-title-icon">🛒</div>
+          <span style="font-size:13px;font-weight:700;color:var(--atlas-navy)">Precios de competidores</span>
+          <span style="font-size:11px;color:var(--text3)">Resultados de Mercado Libre · links directos a otras tiendas</span>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-end">
+          <div class="field" style="flex:1;margin-bottom:0">
+            <label class="field-label">Describe el producto a buscar</label>
+            <input class="input" id="simDescBusqueda"
+              placeholder='ej. "colchón matrimonial ortopédico Serta" o "base box queen individual"'
+              onkeydown="if(event.key==='Enter') simBuscarCompetidores()">
+          </div>
+          <button class="btn btn-primary" onclick="simBuscarCompetidores()" style="white-space:nowrap;flex-shrink:0">🔍 Buscar precios</button>
+        </div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;color:var(--text3);font-weight:600">Ir directo a:</span>
+          <a id="simLinkShopping" href="#" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">🛒 Google Shopping</a>
+          <a id="simLinkML"       href="#" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">🏪 Mercado Libre</a>
+          <a id="simLinkLiverpool" href="#" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">🔴 Liverpool</a>
+          <a id="simLinkWalmart"  href="#" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">🔵 Walmart</a>
+          <a id="simLinkAmazon"   href="#" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">📦 Amazon MX</a>
+        </div>
+        <!-- Área de resultados — siempre reservada -->
+        <div id="simGscArea" style="background:var(--surface);min-height:400px;padding:16px">
+          <div id="simGscPlaceholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:360px;color:var(--text3);gap:10px">
+            <div style="font-size:40px">🛒</div>
+            <div style="font-size:13px;font-weight:600">Los resultados de búsqueda aparecerán aquí</div>
+            <div style="font-size:11px">Escribe una descripción arriba y presiona <strong>Buscar precios</strong></div>
+          </div>
+          <div id="simMlResults" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- /page-simulador -->
+
 </div><!-- /app-body -->
 
 <!-- ===== MODAL: Canal ===== -->
@@ -1356,6 +1450,7 @@ let editingChannelId = null;
 let sheetData = [];
 let bundleMap = {};
 let catalogoArticulosMap = {};
+let _simSkus = [];
 let envioData = [];
 let envioMap  = {};
 let killersData = [];
@@ -2450,6 +2545,7 @@ function buildNav() {
     {id:'canales',     label:'Canales',      icon:'🏪', roles:['admin']},
     {id:'killers',     label:'Killers',      icon:'🎯', roles:['admin','kam']},
     {id:'apoyo-marca', label:'Apoyo Marca',  icon:'🏷️', roles:['admin','kam']},
+    {id:'simulador',   label:'Simulador',    icon:'🔬', roles:['admin','kam']},
     {id:'usuarios',    label:'Usuarios',     icon:'👥', roles:['admin']},
   ];
   nav.innerHTML = '';
@@ -2476,6 +2572,7 @@ function navigateTo(pageId) {
   if(pageId==='catalogos') showCatTab('bundles');
   if(pageId==='killers') { renderKillersTable(); populateKillerCanalSelect(); }
   if(pageId==='apoyo-marca') { renderApoyoMarcaTable(); populateMarcasDatalist(); }
+  if(pageId==='simulador')  initSimulador();
   sessionStorage.setItem('atlas_page', pageId);
 }
 
@@ -2485,6 +2582,10 @@ function navigateTo(pageId) {
 const EMAILJS_SERVICE_ID  = 'service_msz3ajw';
 const EMAILJS_TEMPLATE_ID = 'template_abs07iy';
 const EMAILJS_PUBLIC_KEY  = 'PjT52wA-rrrMY0rY0';
+
+// Google Custom Search API — llenar para activar búsqueda de competidores
+const GSEARCH_API_KEY = 'AIzaSyBjJGzsYAiVoei6DoglG6q1OH7Y8hyVs98';
+const GSEARCH_CX      = '47d08e1ab47764de8';
 
 /* =============================================
    CANALES — Firestore
@@ -5237,6 +5338,249 @@ window.onload = async () => {
     }
   }
 };
+
+/* =============================================
+   SIMULADOR MULTI-CANAL
+============================================= */
+function initSimulador() {
+  simRenderSkuList();
+}
+
+function simSearchSku(q) {
+  const dd = document.getElementById('simSkuDropdown');
+  if (!dd) return;
+  if (!q || q.length < 1) { dd.style.display = 'none'; return; }
+  const term = q.toUpperCase();
+  const matches = Object.entries(catalogoArticulosMap)
+    .filter(([k, v]) =>
+      (k.toUpperCase().includes(term) || (v.descripcion || '').toUpperCase().includes(term)) &&
+      !_simSkus.find(s => s.sku === k)
+    )
+    .slice(0, 10);
+  if (!matches.length) {
+    dd.innerHTML = '<div style="padding:10px 12px;color:var(--text3);font-size:12px">Sin resultados</div>';
+    dd.style.display = 'block';
+    return;
+  }
+  dd.innerHTML = matches.map(([sku, v]) => `
+    <div onclick="simAgregarSku('${sku}')"
+      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='var(--surface2)'"
+      onmouseout="this.style.background=''">
+      <span style="font-family:var(--mono);font-weight:600;color:var(--atlas-navy)">${sku}</span>
+      <span style="color:var(--text2);margin-left:6px">${(v.descripcion || '').slice(0, 60)}</span>
+      ${v.ultimoCosto > 0 ? `<span style="float:right;color:var(--text3)">${fmt(v.ultimoCosto)}</span>` : ''}
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+function simAgregarSku(sku) {
+  if (_simSkus.find(s => s.sku === sku)) return;
+  const art = catalogoArticulosMap[sku];
+  _simSkus.push({ sku, descripcion: art?.descripcion || sku, costo: art?.ultimoCosto || 0 });
+  const inp = document.getElementById('simSkuInput');
+  const dd  = document.getElementById('simSkuDropdown');
+  if (inp) inp.value = '';
+  if (dd)  dd.style.display = 'none';
+  simRenderSkuList();
+}
+
+function simQuitarSku(sku) {
+  _simSkus = _simSkus.filter(s => s.sku !== sku);
+  simRenderSkuList();
+}
+
+function simRenderSkuList() {
+  const el = document.getElementById('simSkuList');
+  if (!el) return;
+  if (!_simSkus.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:10px 0">Agrega artículos para simular</div>';
+    return;
+  }
+  el.innerHTML = _simSkus.map(s => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:6px;padding:7px 10px;border:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--atlas-navy)">${s.sku}</div>
+        <div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.descripcion}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);white-space:nowrap">${s.costo > 0 ? fmt(s.costo) : '<span style="color:var(--danger)">Sin costo</span>'}</div>
+      <button onclick="simQuitarSku('${s.sku}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:15px;padding:0 2px;line-height:1;flex-shrink:0">✕</button>
+    </div>`).join('');
+}
+
+function simularCanales() {
+  if (!_simSkus.length) { _uiAlert('Agrega al menos un artículo para simular.', 'warning'); return; }
+  const margen     = parseFloat(document.getElementById('simMargen')?.value) || 18;
+  const guias      = parseInt(document.getElementById('simGuias')?.value)    || 1;
+  const apoyoPromo = parseFloat(document.getElementById('simApoyoPromo')?.value) || 0;
+  const canalesActivos = canales.filter(c => c.activo);
+  if (!canalesActivos.length) { _uiAlert('No hay canales activos configurados.', 'warning'); return; }
+
+  // Bundle sintético temporal
+  const FAKE_SKU = '__SIM__';
+  bundleMap[FAKE_SKU] = _simSkus.map(s => ({
+    bundle: FAKE_SKU, componente: s.sku, cantidad: 1, descripcion: s.descripcion
+  }));
+
+  const resultados = canalesActivos.map(ch => ({
+    ch,
+    r: calcularBundle(FAKE_SKU, ch, margen, guias, undefined, apoyoPromo)
+  }));
+
+  delete bundleMap[FAKE_SKU];
+
+  const el = document.getElementById('simResultados');
+  if (!el) return;
+
+  const sinCosto = resultados[0]?.r?.sinCosto || [];
+  const warnHtml = sinCosto.length
+    ? `<div class="alert alert-warning" style="margin-bottom:12px"><span>⚠️</span>
+        <div>SKUs sin costo registrado: <strong>${sinCosto.map(c => c.componente).join(', ')}</strong>. El cálculo puede no ser exacto.</div>
+       </div>`
+    : '';
+
+  const resumenCosto = resultados[0]?.r;
+  const costoResumen = resumenCosto
+    ? `<div class="card" style="padding:10px 16px;margin-bottom:12px;background:var(--surface2)">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:12px">
+          <div><span style="color:var(--text3)">Costo s/IVA: </span><strong>${fmt(resumenCosto.costoSinIva)}</strong></div>
+          <div><span style="color:var(--text3)">Costo c/IVA: </span><strong>${fmt(resumenCosto.costoIva)}</strong></div>
+          ${resumenCosto.totalApoyoMarca > 0 ? `<div><span style="color:var(--text3)">Apoyo Marca: </span><strong style="color:var(--success)">−${fmt(resumenCosto.totalApoyoMarca)}</strong></div>` : ''}
+          ${apoyoPromo > 0 ? `<div><span style="color:var(--text3)">Apoyo Promo: </span><strong>${fmt(apoyoPromo)}</strong></div>` : ''}
+          <div><span style="color:var(--text3)">Artículos: </span><strong>${_simSkus.length}</strong></div>
+        </div>
+      </div>`
+    : '';
+
+  el.innerHTML = warnHtml + costoResumen + `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">
+      ${resultados.map(({ ch, r }) => {
+        if (!r) return `
+          <div class="card" style="opacity:.6;padding:14px 16px">
+            <div style="font-size:13px;font-weight:700;color:var(--atlas-navy);margin-bottom:8px">${ch.nombre}</div>
+            <div style="font-size:12px;color:var(--text3)">Sin datos suficientes para calcular</div>
+          </div>`;
+        const psicColor = r.psicOk ? 'var(--success)' : 'var(--danger)';
+        const psicBg    = r.psicOk ? 'var(--success-bg)' : 'var(--danger-bg)';
+        const utilColor = r.utilidadPct >= 0.12 ? 'var(--success)' : r.utilidadPct >= 0 ? 'var(--warning)' : 'var(--danger)';
+        return `
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:13px;font-weight:700;color:var(--atlas-navy);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #C8202F">${ch.nombre}</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:var(--text3)">Costo c/IVA</span><span>${fmt(r.costoIva)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:var(--text3)">Envío</span><span>${fmt(r.envio)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:var(--text3)">P. Lleno</span><span>${fmt(r.precioLleno)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-top:5px;padding-top:5px;border-top:1px solid var(--border)">
+                <span>P. Venta</span><span style="color:var(--atlas-navy)">${fmt(r.precioVenta)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:var(--text3)">Utilidad</span>
+                <span style="color:${utilColor};font-weight:600">${fmt(r.utilidad)} · ${(r.utilidadPct * 100).toFixed(1)}%</span>
+              </div>
+              <div style="margin-top:6px;padding:5px 8px;border-radius:6px;background:${psicBg};display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:${psicColor};font-weight:600">PSIC</span>
+                <span style="color:${psicColor};font-weight:700">${(r.psic * 100).toFixed(1)}% ${r.psicOk ? '✓' : '✗'}</span>
+              </div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function simBuscarCompetidores() {
+  const q = (document.getElementById('simDescBusqueda')?.value || '').trim();
+  if (!q) { _uiAlert('Escribe una descripción para buscar.', 'warning'); return; }
+
+  const enc = encodeURIComponent(q);
+
+  // Actualizar links directos
+  const linkMap = {
+    simLinkShopping:   `https://www.google.com/search?q=${enc}+precio&tbm=shop&hl=es&gl=mx`,
+    simLinkML:         `https://listado.mercadolibre.com.mx/${enc.replace(/%20/g,'+')}`,
+    simLinkLiverpool:  `https://www.liverpool.com.mx/tienda/search?q=${enc}`,
+    simLinkWalmart:    `https://www.walmart.com.mx/search?q=${enc}`,
+    simLinkAmazon:     `https://www.amazon.com.mx/s?k=${enc}`
+  };
+  Object.entries(linkMap).forEach(([id, url]) => {
+    const a = document.getElementById(id); if (a) a.href = url;
+  });
+
+  // Mostrar área de resultados
+  const ph  = document.getElementById('simGscPlaceholder');
+  const res = document.getElementById('simMlResults');
+  if (ph)  ph.style.display  = 'none';
+  if (res) { res.style.display = 'block'; res.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--text3)">
+      <div style="width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--atlas-navy);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>
+      Buscando en Mercado Libre...
+    </div>`; }
+
+  setTimeout(() => document.getElementById('simGscArea')?.scrollIntoView({ behavior:'smooth', block:'start' }), 150);
+
+  try {
+    const resp = await fetch(
+      `https://api.mercadolibre.com/sites/MLM/search?q=${enc}&limit=12&sort=price_asc`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data  = await resp.json();
+    const items = data.results || [];
+
+    if (!items.length) {
+      res.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">Sin resultados — intenta con otra descripción</div>`;
+      return;
+    }
+
+    const total = (data.paging?.total || items.length).toLocaleString('es-MX');
+    res.innerHTML = `
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">${total} resultados en Mercado Libre · ordenados por precio menor a mayor</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px">
+        ${items.map(item => {
+          const precio = Number(item.price).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});
+          const thumb  = (item.thumbnail||'').replace('http:','https:').replace(/\/p\//,'/');
+          const cond   = item.condition === 'used' ? '<div style="font-size:10px;color:var(--warning);font-weight:600">Usado</div>' : '';
+          const seller = item.seller?.nickname ? `<div style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.seller.nickname}</div>` : '';
+          return `
+          <a href="${item.permalink}" target="_blank" rel="noopener"
+            style="text-decoration:none;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);transition:box-shadow .15s"
+            onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.12)'"
+            onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.05)'">
+            <div style="aspect-ratio:1;background:#f5f6f8;display:flex;align-items:center;justify-content:center;overflow:hidden">
+              ${thumb ? `<img src="${thumb}" alt="" loading="lazy" style="max-width:100%;max-height:100%;object-fit:contain;padding:8px" onerror="this.parentElement.innerHTML='<span style=font-size:28px>📦</span>'">` : '<span style="font-size:28px">📦</span>'}
+            </div>
+            <div style="padding:10px;display:flex;flex-direction:column;gap:3px;flex:1">
+              <div style="font-size:11px;color:var(--text2);line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${item.title}</div>
+              <div style="margin-top:auto;padding-top:6px">
+                <div style="font-size:16px;font-weight:800;color:var(--atlas-navy)">$${precio}</div>
+                <div style="font-size:10px;color:var(--text3)">MXN</div>
+              </div>
+              ${cond}${seller}
+            </div>
+          </a>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {
+    // Fallback: DuckDuckGo Shopping iframe (funciona en localhost, ML requiere HTTPS origin)
+    res.innerHTML = `
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <span>Mostrando resultados vía DuckDuckGo Shopping</span>
+        <span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10px">
+          En el sitio desplegado se cargarán desde Mercado Libre
+        </span>
+      </div>
+      <iframe
+        src="https://duckduckgo.com/?q=${enc}+precio+mexico&ia=shopping&iax=shopping&kl=mx-es"
+        style="width:100%;height:540px;border:none;border-radius:8px;background:#f5f6f8"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox">
+      </iframe>`;
+  }
+}
 </script>
 
 <!-- ===== OVERLAY: CARGANDO ===== -->
