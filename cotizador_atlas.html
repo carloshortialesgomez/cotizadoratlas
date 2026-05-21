@@ -1861,7 +1861,7 @@ async function guardarActualizacionItem() {
   const idxActual = _editandoItemIndex;
   _showLoading('Actualizando...');
   try {
-    const cotRef = db.collection('cotizaciones').doc(cotIdActual);
+    const cotRef = _db.collection('cotizaciones').doc(cotIdActual);
     const cotSnap = await cotRef.get();
     if (!cotSnap.exists) throw new Error('Cotización no encontrada en Firestore.');
     const cotData = cotSnap.data();
