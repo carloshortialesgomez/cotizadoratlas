@@ -1656,6 +1656,7 @@ async function guardarCotizacionMasiva() {
       utilidad: r.utilidad || 0,
       utilidadPct: r.utilidadPct || 0,
       psicOk: r.psicOk || false,
+      psic: r.psic || 0,
       sinCosto: r.sinCosto || [],
       canalGaRate: currentChannel.gaRate || 3,
       canalFactorPL: currentChannel.factorPL || 75,
@@ -1854,37 +1855,49 @@ function editarItemDesdeCotizacion(cotId, itemIndex, sku, margen, guias, apoyoPr
 
 async function guardarActualizacionItem() {
   const r = window._lastQuot;
-  if (!r || !_editandoItemCotId) return;
-  const cotRef = db.collection('cotizaciones').doc(_editandoItemCotId);
-  const cotSnap = await cotRef.get();
-  if (!cotSnap.exists) { _uiAlert('Cotización no encontrada.', 'danger'); return; }
-  const cotData = cotSnap.data();
-  const items = [...(cotData.items || [])];
-  const artEntry = catalogoArticulosMap[r.sku];
-  const descripcion = artEntry?.descripcion || r.componentes?.[0]?.descripcion || r.sku;
-  const killer = getActiveKiller(r.sku, currentChannel.id);
-  const killerInfo = killer ? { ...killer, importe: killer.tipoValor==='pct' ? r.precioVenta*(killer.valor/100) : killer.valor } : null;
-  items[_editandoItemIndex] = {
-    sku: r.sku, descripcion, canal: r.canal, canalId: currentChannel.id,
-    margen: r.margen, guias: r.guias || 1,
-    costoIva: r.costoIva, envio: r.envio,
-    precioLleno: r.precioLleno, precioVenta: r.precioVenta,
-    utilidad: r.utilidad, utilidadPct: r.utilidadPct,
-    apoyoPromo: r.apoyoPromo || 0, totalApoyoMarca: r.totalApoyoMarca || 0,
-    psicOk: r.psicOk, psic: r.psic, sinCosto: r.sinCosto || [],
-    canalGaRate: currentChannel.gaRate || 3, canalFactorPL: currentChannel.factorPL || 75,
-    killer: killerInfo, estado: r.psicOk ? 'ok' : 'warn'
-  };
-  const exitosos = items.filter(i => i.estado !== 'err').length;
-  const errores = items.filter(i => i.estado === 'err').length;
-  await cotRef.update({ items, exitosos, errores, updatedAt: Date.now() });
-  _editandoItemCotId = null;
-  _editandoItemIndex = null;
-  const btnUpd = document.getElementById('btnActualizarItemSidebar');
-  if (btnUpd) btnUpd.style.display = 'none';
-  _uiAlert('SKU actualizado correctamente en la cotización.', 'success');
-  navigateTo('historial');
-  await loadHistorial();
+  if (!r) { _uiAlert('Primero calcula el SKU antes de actualizar.', 'warning'); return; }
+  if (!_editandoItemCotId) { _uiAlert('No hay cotización en edición.', 'warning'); return; }
+  const cotIdActual = _editandoItemCotId;
+  const idxActual = _editandoItemIndex;
+  _showLoading('Actualizando...');
+  try {
+    const cotRef = db.collection('cotizaciones').doc(cotIdActual);
+    const cotSnap = await cotRef.get();
+    if (!cotSnap.exists) throw new Error('Cotización no encontrada en Firestore.');
+    const cotData = cotSnap.data();
+    const items = [...(cotData.items || [])];
+    const artEntry = catalogoArticulosMap[r.sku];
+    const descripcion = artEntry?.descripcion || r.componentes?.[0]?.descripcion || r.sku;
+    const killer = getActiveKiller(r.sku, currentChannel.id);
+    const killerInfo = killer ? { ...killer, importe: killer.tipoValor==='pct' ? r.precioVenta*(killer.valor/100) : killer.valor } : null;
+    const guias = parseInt(document.getElementById('guiasInd')?.value || '1');
+    items[idxActual] = {
+      sku: r.sku, descripcion, canal: r.canal, canalId: currentChannel.id,
+      margen: r.margen, guias,
+      costoIva: r.costoIva, envio: r.envio,
+      precioLleno: r.precioLleno, precioVenta: r.precioVenta,
+      utilidad: r.utilidad, utilidadPct: r.utilidadPct,
+      apoyoPromo: r.apoyoPromo || 0, totalApoyoMarca: r.totalApoyoMarca || 0,
+      psicOk: r.psicOk, psic: r.psic || 0, sinCosto: r.sinCosto || [],
+      canalGaRate: currentChannel.gaRate || 3, canalFactorPL: currentChannel.factorPL || 75,
+      killer: killerInfo, estado: r.psicOk ? 'ok' : 'warn'
+    };
+    const exitosos = items.filter(i => i.estado !== 'err').length;
+    const errores  = items.filter(i => i.estado === 'err').length;
+    await cotRef.update({ items, exitosos, errores, updatedAt: Date.now() });
+    _editandoItemCotId = null;
+    _editandoItemIndex = null;
+    const btnUpd = document.getElementById('btnActualizarItemSidebar');
+    if (btnUpd) btnUpd.style.display = 'none';
+    navigateTo('historial');
+    await loadHistorial();
+    abrirCotizacion(cotIdActual);
+  } catch(e) {
+    console.error('guardarActualizacionItem:', e);
+    _uiAlert('Error al actualizar: ' + e.message, 'danger');
+  } finally {
+    _hideLoading();
+  }
 }
 
 async function autorizarCotizacion() {
@@ -4184,7 +4197,7 @@ function generarPDF() {
   doc.setFontSize(9); doc.setFont('helvetica','bold');
   doc.setTextColor(...(r.utilidadPct>0.15?[140,232,187]:[245,190,100]));
   doc.text(fmtPct(r.utilidadPct),rbx+rbw/2-10,rby+31,{align:'center'});
-  doc.setTextColor(...(r.psicOk?[140,232,187]:[245,130,130]));
+  doc.setTextColor(...(r.psicOk?[140,232,187]:[200,32,47]));
   doc.text(((r.psic||0)*100).toFixed(1)+'%',rbx+rbw/2+12,rby+31,{align:'center'});
   y=yBox+44;
 
@@ -4878,6 +4891,17 @@ function _uiPromptPassword(msg) {
   });
 }
 
+function _showLoading(msg = 'Cargando...') {
+  const el = document.getElementById('appLoadingOverlay');
+  const msgEl = document.getElementById('appLoadingMsg');
+  if (el) { el.style.display = 'flex'; }
+  if (msgEl) msgEl.textContent = msg;
+}
+function _hideLoading() {
+  const el = document.getElementById('appLoadingOverlay');
+  if (el) el.style.display = 'none';
+}
+
 function _uiAlert(msg, type = 'info') {
   const cfg = {
     success: { cls:'ui-toast-success', icon:'✓' },
@@ -5199,6 +5223,12 @@ window.onload = async () => {
   }
 };
 </script>
+
+<!-- ===== OVERLAY: CARGANDO ===== -->
+<div id="appLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,18,40,0.65);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="width:44px;height:44px;border:4px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite"></div>
+  <div id="appLoadingMsg" style="color:#fff;font-size:15px;font-weight:600;letter-spacing:.02em">Cargando...</div>
+</div>
 
 <!-- ===== MODAL: VER COTIZACIÓN ===== -->
 <div id="cotizacionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:2rem 1rem">
