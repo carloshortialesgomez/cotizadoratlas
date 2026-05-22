@@ -5590,42 +5590,20 @@ async function simBuscarCompetidores() {
   if (cards) cards.innerHTML = `
     <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:10px">⏳</div>
-      <div style="font-size:13px">Buscando precios en Mercado Libre...</div>
+      <div style="font-size:13px">Buscando precios en tiendas configuradas...</div>
     </div>`;
 
   let resultados = [];
 
-  // 1. Mercado Libre directo desde el browser (IP residencial — funciona sin auth)
+  // Firebase Function maneja autenticación ML y otros sitios configurados
   try {
-    const mlResp = await fetch(
-      `https://api.mercadolibre.com/sites/MLM/search?q=${enc}&limit=12&sort=relevance`
-    );
-    if (mlResp.ok) {
-      const mlData = await mlResp.json();
-      resultados = (mlData.results || []).map(item => ({
-        title:     item.title,
-        link:      item.permalink,
-        image:     (item.thumbnail || '').replace(/^http:/, 'https:') || null,
-        price:     item.price,
-        store:     'Mercado Libre',
-        storeIcon: '🏪',
-      }));
+    const resp = await fetch(`${FUNCTION_URL}?q=${enc}`);
+    if (resp.ok) {
+      const data = await resp.json();
+      resultados = data.resultados || [];
     }
   } catch(e) {
-    console.warn('ML browser:', e.message);
-  }
-
-  // 2. Fallback: Firebase Function (Google Custom Search para otros sitios)
-  if (!resultados.length) {
-    try {
-      const resp = await fetch(`${FUNCTION_URL}?q=${enc}`);
-      if (resp.ok) {
-        const data = await resp.json();
-        resultados = data.resultados || [];
-      }
-    } catch(e) {
-      console.warn('Function fallback:', e.message);
-    }
+    console.warn('buscarCompetidores function:', e.message);
   }
 
   if (!resultados.length) {
