@@ -1180,7 +1180,7 @@ td.center{text-align:center}
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
           <div class="card-title-icon">🛒</div>
           <span style="font-size:13px;font-weight:700;color:var(--atlas-navy)">Precios de competidores</span>
-          <span style="font-size:11px;color:var(--text3)">Resultados de Mercado Libre · links directos a otras tiendas</span>
+          <span style="font-size:11px;color:var(--text3)">Tarjetas de producto desde tiendas configuradas · links directos</span>
         </div>
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-end">
           <div class="field" style="flex:1;margin-bottom:0">
@@ -1206,7 +1206,7 @@ td.center{text-align:center}
             <div style="font-size:13px;font-weight:600">Los resultados de búsqueda aparecerán aquí</div>
             <div style="font-size:11px">Escribe una descripción arriba y presiona <strong>Buscar precios</strong></div>
           </div>
-          <div id="simCseResults"></div>
+          <div id="simProductCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px"></div>
         </div>
       </div>
     </div>
@@ -1214,7 +1214,77 @@ td.center{text-align:center}
   </div>
   <!-- /page-simulador -->
 
+  <!-- ===== PAGE: SITIOS BÚSQUEDA (Admin only) ===== -->
+  <div class="page" id="page-sitios-busqueda">
+    <div class="page-header flex-between">
+      <div>
+        <div class="page-title">Sitios de Búsqueda</div>
+        <div class="page-sub">Tiendas que aparecen en la búsqueda de competidores del Simulador</div>
+      </div>
+      <button class="btn btn-red" onclick="sbAbrirModal()">+ Agregar sitio</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="sbLoading" style="text-align:center;padding:3rem;color:var(--text3)">Cargando...</div>
+      <div class="table-wrap" style="border:none;display:none" id="sbTableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:52px">Icono</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Dominio</th>
+              <th style="width:80px;text-align:center">Activo</th>
+              <th style="width:110px">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="sbBody"></tbody>
+        </table>
+      </div>
+      <div id="sbEmpty" style="text-align:center;padding:3rem;color:var(--text3);display:none">
+        No hay sitios configurados. Presiona <strong>+ Agregar sitio</strong> para empezar.
+      </div>
+    </div>
+  </div>
+  <!-- /page-sitios-busqueda -->
+
 </div><!-- /app-body -->
+
+<!-- ===== MODAL: Sitio de Búsqueda ===== -->
+<div class="modal-overlay" id="modalSitio">
+  <div class="modal" style="width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="modalSitioTitle">Agregar sitio</div>
+      <button class="modal-close" onclick="sbCerrarModal()">×</button>
+    </div>
+    <div class="field-row">
+      <div class="field" style="max-width:90px">
+        <label class="field-label">Icono</label>
+        <input class="input" id="sbIcono" placeholder="🏪" maxlength="4" style="text-align:center;font-size:18px">
+      </div>
+      <div class="field">
+        <label class="field-label">Nombre</label>
+        <input class="input" id="sbNombre" placeholder="Ej. Mercado Libre">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Tipo de búsqueda</label>
+      <select class="input" id="sbTipo" onchange="sbTipoChange()">
+        <option value="mercadolibre">Mercado Libre (API nativa — sin costo)</option>
+        <option value="google">Otro sitio — vía Google Custom Search</option>
+      </select>
+    </div>
+    <div class="field" id="sbDominioWrap">
+      <label class="field-label">Dominio del sitio</label>
+      <input class="input" id="sbDominio" placeholder="ej. liverpool.com.mx">
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">Solo el dominio, sin <code>https://</code></div>
+    </div>
+    <input type="hidden" id="sbEditId">
+    <div style="display:flex;gap:10px;margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="sbCerrarModal()" style="flex:1">Cancelar</button>
+      <button class="btn btn-red" onclick="sbGuardar()" style="flex:1">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MODAL: Canal ===== -->
 <div class="modal-overlay" id="modalCanal">
@@ -2545,8 +2615,9 @@ function buildNav() {
     {id:'canales',     label:'Canales',      icon:'🏪', roles:['admin']},
     {id:'killers',     label:'Killers',      icon:'🎯', roles:['admin','kam']},
     {id:'apoyo-marca', label:'Apoyo Marca',  icon:'🏷️', roles:['admin','kam']},
-    {id:'simulador',   label:'Simulador',    icon:'🔬', roles:['admin','kam']},
-    {id:'usuarios',    label:'Usuarios',     icon:'👥', roles:['admin']},
+    {id:'simulador',       label:'Simulador',      icon:'🔬', roles:['admin','kam']},
+    {id:'sitios-busqueda', label:'Sitios Búsq.',   icon:'🔎', roles:['admin']},
+    {id:'usuarios',        label:'Usuarios',        icon:'👥', roles:['admin']},
   ];
   nav.innerHTML = '';
   pages.filter(p=>p.roles.includes(currentUser.rol)).forEach(p=>{
@@ -2572,7 +2643,8 @@ function navigateTo(pageId) {
   if(pageId==='catalogos') showCatTab('bundles');
   if(pageId==='killers') { renderKillersTable(); populateKillerCanalSelect(); }
   if(pageId==='apoyo-marca') { renderApoyoMarcaTable(); populateMarcasDatalist(); }
-  if(pageId==='simulador')  initSimulador();
+  if(pageId==='simulador')        initSimulador();
+  if(pageId==='sitios-busqueda')  initSitiosBusqueda();
   sessionStorage.setItem('atlas_page', pageId);
 }
 
@@ -2583,9 +2655,8 @@ const EMAILJS_SERVICE_ID  = 'service_msz3ajw';
 const EMAILJS_TEMPLATE_ID = 'template_abs07iy';
 const EMAILJS_PUBLIC_KEY  = 'PjT52wA-rrrMY0rY0';
 
-// Google Custom Search API — llenar para activar búsqueda de competidores
-const GSEARCH_API_KEY = 'AIzaSyARc1mQ3Vg_Suftbn9sWoyyPErukwdRst8';
-const GSEARCH_CX      = 'a41f7027837f942e9';
+// URL de la Cloud Function para búsqueda de competidores
+const FUNCTION_URL = 'https://us-central1-cotizadoratlas.cloudfunctions.net/buscarCompetidores';
 
 /* =============================================
    CANALES — Firestore
@@ -5342,48 +5413,7 @@ window.onload = async () => {
 /* =============================================
    SIMULADOR MULTI-CANAL
 ============================================= */
-// ── Google CSE Widget (gratuito, no requiere facturación) ────────────────────
-let _cseLoaded  = false;
-let _cseReady   = false;
-let _cseEl      = null;
-let _csePending = null;
-
-function _simCargarCSE() {
-  if (_cseLoaded) return;
-  _cseLoaded = true;
-  window.__gcse = {
-    parsetags: 'explicit',
-    callback: function() {
-      try {
-        google.search.cse.element.render({
-          div:   'simCseResults',
-          tag:   'searchresults-only',
-          gname: 'atlasCompSim',
-          attributes: { linkTarget: '_blank', enableHistory: false }
-        });
-        _cseEl   = google.search.cse.element.getElement('atlasCompSim');
-        _cseReady = true;
-        if (_csePending) { _cseEl.execute(_csePending); _csePending = null; }
-      } catch(e) { console.warn('CSE widget error:', e); }
-    }
-  };
-  const s = document.createElement('script');
-  s.async = true;
-  s.src   = `https://cse.google.com/cse.js?cx=${GSEARCH_CX}`;
-  document.head.appendChild(s);
-}
-
-function _simEjecutarCSE(query) {
-  const ph  = document.getElementById('simGscPlaceholder');
-  if (ph) ph.style.display = 'none';
-  if (_cseReady && _cseEl) {
-    _cseEl.execute(query);
-  } else {
-    _csePending = query;
-    _simCargarCSE();
-  }
-  setTimeout(() => document.getElementById('simGscArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
-}
+/* ── búsqueda de competidores vía Firebase Function ── */
 
 function initSimulador() {
   simRenderSkuList();
@@ -5544,68 +5574,231 @@ async function simBuscarCompetidores() {
 
   // Actualizar links directos
   const linkMap = {
-    simLinkShopping:   `https://www.google.com/search?q=${enc}+precio&tbm=shop&hl=es&gl=mx`,
-    simLinkML:         `https://listado.mercadolibre.com.mx/${enc.replace(/%20/g,'+')}`,
-    simLinkLiverpool:  `https://www.liverpool.com.mx/tienda/search?q=${enc}`,
-    simLinkWalmart:    `https://www.walmart.com.mx/search?q=${enc}`,
-    simLinkAmazon:     `https://www.amazon.com.mx/s?k=${enc}`
+    simLinkShopping:  `https://www.google.com/search?q=${enc}+precio&tbm=shop&hl=es&gl=mx`,
+    simLinkML:        `https://listado.mercadolibre.com.mx/${enc.replace(/%20/g,'+')}`,
+    simLinkLiverpool: `https://www.liverpool.com.mx/tienda/search?q=${enc}`,
+    simLinkWalmart:   `https://www.walmart.com.mx/search?q=${enc}`,
+    simLinkAmazon:    `https://www.amazon.com.mx/s?k=${enc}`,
   };
   Object.entries(linkMap).forEach(([id, url]) => {
     const a = document.getElementById(id); if (a) a.href = url;
   });
 
-  // Mostrar área de resultados
-  const ph  = document.getElementById('simGscPlaceholder');
+  const ph    = document.getElementById('simGscPlaceholder');
+  const cards = document.getElementById('simProductCards');
   if (ph) ph.style.display = 'none';
-
-  // Mostrar resultados CSE inline — query orientada a shopping
-  _simEjecutarCSE(q + ' comprar precio mexico');
-  return;
-
-  // Fallback: links directos prominentes (se usa si CSE falla)
-  res.innerHTML = `
-    <div style="text-align:center;padding:24px 16px 8px;color:var(--text2)">
-      <div style="font-size:28px;margin-bottom:10px">🔍</div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Busca "${q}" en cada tienda</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">Haz clic para abrir los resultados directamente</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;max-width:700px;margin:0 auto">
-        <a href="${linkMap.simLinkShopping}" target="_blank" rel="noopener"
-          style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#fff;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:box-shadow .15s"
-          onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
-          <div style="font-size:24px">🛒</div>
-          <div style="font-size:12px;font-weight:600;color:var(--atlas-navy)">Google Shopping</div>
-          <div style="font-size:10px;color:var(--text3)">Ver precios con foto</div>
-        </a>
-        <a href="${linkMap.simLinkML}" target="_blank" rel="noopener"
-          style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#fff;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:box-shadow .15s"
-          onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
-          <div style="font-size:24px">🏪</div>
-          <div style="font-size:12px;font-weight:600;color:var(--atlas-navy)">Mercado Libre</div>
-          <div style="font-size:10px;color:var(--text3)">Más listings de México</div>
-        </a>
-        <a href="${linkMap.simLinkLiverpool}" target="_blank" rel="noopener"
-          style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#fff;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:box-shadow .15s"
-          onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
-          <div style="font-size:24px">🔴</div>
-          <div style="font-size:12px;font-weight:600;color:var(--atlas-navy)">Liverpool</div>
-          <div style="font-size:10px;color:var(--text3)">Canal principal</div>
-        </a>
-        <a href="${linkMap.simLinkWalmart}" target="_blank" rel="noopener"
-          style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#fff;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:box-shadow .15s"
-          onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
-          <div style="font-size:24px">🔵</div>
-          <div style="font-size:12px;font-weight:600;color:var(--atlas-navy)">Walmart</div>
-          <div style="font-size:10px;color:var(--text3)">Canal marketplace</div>
-        </a>
-        <a href="${linkMap.simLinkAmazon}" target="_blank" rel="noopener"
-          style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#fff;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:box-shadow .15s"
-          onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
-          <div style="font-size:24px">📦</div>
-          <div style="font-size:12px;font-weight:600;color:var(--atlas-navy)">Amazon MX</div>
-          <div style="font-size:10px;color:var(--text3)">E-commerce</div>
-        </a>
-      </div>
+  if (cards) cards.innerHTML = `
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:10px">⏳</div>
+      <div style="font-size:13px">Buscando precios en tiendas configuradas...</div>
     </div>`;
+
+  try {
+    const resp = await fetch(`${FUNCTION_URL}?q=${enc}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    if (!data.resultados?.length) {
+      if (cards) cards.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
+          <div style="font-size:32px;margin-bottom:10px">🔍</div>
+          <div style="font-size:13px;font-weight:600">Sin resultados para "<em>${q}</em>"</div>
+          <div style="font-size:11px;margin-top:6px">Prueba con otras palabras o usa los links directos de arriba</div>
+          ${data.aviso ? `<div style="font-size:11px;margin-top:8px;color:var(--warning)">${data.aviso}</div>` : ''}
+        </div>`;
+      return;
+    }
+
+    if (cards) cards.innerHTML = data.resultados.map(item => `
+      <a href="${item.link}" target="_blank" rel="noopener"
+        style="text-decoration:none;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s;color:inherit"
+        onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
+        ${item.image
+          ? `<div style="height:140px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden">
+               <img src="${item.image}" alt="" loading="lazy"
+                 style="max-height:136px;max-width:100%;object-fit:contain"
+                 onerror="this.parentElement.innerHTML='<span style=font-size:36px>${item.storeIcon}</span>'">
+             </div>`
+          : `<div style="height:100px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:40px">${item.storeIcon}</div>`
+        }
+        <div style="padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:5px">
+          <div style="font-size:11px;color:var(--text3)">${item.storeIcon} ${item.store}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--atlas-navy);line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">
+            ${item.title}
+          </div>
+          ${item.price
+            ? `<div style="font-size:15px;font-weight:700;color:#C8202F;margin-top:auto;padding-top:6px">${fmt(item.price)}</div>`
+            : `<div style="font-size:11px;color:var(--text3);margin-top:auto;padding-top:6px">Ver precio →</div>`}
+        </div>
+      </a>`).join('');
+
+    setTimeout(() => document.getElementById('simGscArea')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+
+  } catch(e) {
+    console.warn('buscarCompetidores:', e.message);
+    if (cards) cards.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:10px">⚠️</div>
+        <div style="font-size:13px;font-weight:600">El servicio de búsqueda no está disponible aún</div>
+        <div style="font-size:11px;margin-top:6px">Usa los links directos de arriba mientras se configura Firebase Functions</div>
+      </div>`;
+  }
+}
+
+/* =============================================
+   SITIOS BÚSQUEDA — Admin Panel
+============================================= */
+
+const SB_DEFAULTS = [
+  { nombre: 'Mercado Libre', tipo: 'mercadolibre', dominio: '',                  icono: '🏪', activo: true },
+  { nombre: 'Liverpool',     tipo: 'google',        dominio: 'liverpool.com.mx',  icono: '🔴', activo: true },
+  { nombre: 'Walmart',       tipo: 'google',        dominio: 'walmart.com.mx',    icono: '🔵', activo: true },
+  { nombre: 'Amazon MX',     tipo: 'google',        dominio: 'amazon.com.mx',     icono: '📦', activo: true },
+];
+
+async function initSitiosBusqueda() {
+  const loading    = document.getElementById('sbLoading');
+  const tableWrap  = document.getElementById('sbTableWrap');
+  const emptyEl    = document.getElementById('sbEmpty');
+  if (loading)   loading.style.display = 'block';
+  if (tableWrap) tableWrap.style.display = 'none';
+  if (emptyEl)   emptyEl.style.display  = 'none';
+
+  try {
+    const snap = await _db.collection('sitiosBusqueda').orderBy('nombre').get();
+
+    if (snap.empty) {
+      // Sembrar datos por defecto la primera vez
+      const batch = _db.batch();
+      SB_DEFAULTS.forEach(s => {
+        batch.set(_db.collection('sitiosBusqueda').doc(), s);
+      });
+      await batch.commit();
+      return initSitiosBusqueda();
+    }
+
+    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    sbRenderTabla(docs);
+  } catch(e) {
+    console.error('initSitiosBusqueda:', e);
+    if (loading) loading.innerHTML = '<div style="color:var(--danger)">Error al cargar sitios.</div>';
+  }
+}
+
+function sbRenderTabla(docs) {
+  const loading   = document.getElementById('sbLoading');
+  const tableWrap = document.getElementById('sbTableWrap');
+  const emptyEl   = document.getElementById('sbEmpty');
+  const body      = document.getElementById('sbBody');
+  if (loading) loading.style.display = 'none';
+
+  if (!docs.length) {
+    if (emptyEl)   emptyEl.style.display   = 'block';
+    if (tableWrap) tableWrap.style.display  = 'none';
+    return;
+  }
+  if (tableWrap) tableWrap.style.display = '';
+  if (emptyEl)   emptyEl.style.display   = 'none';
+
+  body.innerHTML = docs.map(d => `
+    <tr>
+      <td style="text-align:center;font-size:20px">${d.icono || '🔍'}</td>
+      <td style="font-weight:600">${d.nombre}</td>
+      <td><span style="font-size:11px;background:var(--surface2);padding:2px 8px;border-radius:20px;border:1px solid var(--border)">${d.tipo}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${d.dominio || '—'}</td>
+      <td style="text-align:center">
+        <label style="display:inline-flex;align-items:center;cursor:pointer;gap:6px">
+          <input type="checkbox" ${d.activo ? 'checked' : ''} onchange="sbToggleActivo('${d.id}',this.checked)"
+            style="width:16px;height:16px;accent-color:#C8202F;cursor:pointer">
+        </label>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="sbAbrirModal('${d.id}')">✏️ Editar</button>
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;color:var(--danger)" onclick="sbEliminar('${d.id}','${d.nombre}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function sbTipoChange() {
+  const tipo  = document.getElementById('sbTipo')?.value;
+  const wrap  = document.getElementById('sbDominioWrap');
+  if (wrap) wrap.style.display = tipo === 'google' ? '' : 'none';
+}
+
+function sbAbrirModal(id) {
+  document.getElementById('sbEditId').value  = id || '';
+  document.getElementById('sbIcono').value   = '';
+  document.getElementById('sbNombre').value  = '';
+  document.getElementById('sbTipo').value    = 'mercadolibre';
+  document.getElementById('sbDominio').value = '';
+  document.getElementById('modalSitioTitle').textContent = id ? 'Editar sitio' : 'Agregar sitio';
+  sbTipoChange();
+
+  if (id) {
+    _db.collection('sitiosBusqueda').doc(id).get().then(d => {
+      if (!d.exists) return;
+      const data = d.data();
+      document.getElementById('sbIcono').value   = data.icono   || '';
+      document.getElementById('sbNombre').value  = data.nombre  || '';
+      document.getElementById('sbTipo').value    = data.tipo    || 'mercadolibre';
+      document.getElementById('sbDominio').value = data.dominio || '';
+      sbTipoChange();
+    });
+  }
+
+  document.getElementById('modalSitio').classList.add('open');
+}
+
+function sbCerrarModal() {
+  document.getElementById('modalSitio').classList.remove('open');
+}
+
+async function sbGuardar() {
+  const id     = document.getElementById('sbEditId').value.trim();
+  const nombre = document.getElementById('sbNombre').value.trim();
+  const tipo   = document.getElementById('sbTipo').value;
+  const icono  = document.getElementById('sbIcono').value.trim() || (tipo === 'mercadolibre' ? '🏪' : '🔍');
+  const dominio= tipo === 'google' ? document.getElementById('sbDominio').value.trim() : '';
+
+  if (!nombre) { _uiAlert('El nombre es requerido.', 'warning'); return; }
+  if (tipo === 'google' && !dominio) { _uiAlert('El dominio es requerido para búsquedas de tipo Google.', 'warning'); return; }
+
+  const data = { nombre, tipo, icono, dominio, activo: true };
+  try {
+    if (id) {
+      await _db.collection('sitiosBusqueda').doc(id).update(data);
+    } else {
+      await _db.collection('sitiosBusqueda').add(data);
+    }
+    sbCerrarModal();
+    initSitiosBusqueda();
+    _uiAlert(`Sitio "${nombre}" guardado.`, 'success');
+  } catch(e) {
+    _uiAlert('Error al guardar: ' + e.message, 'error');
+  }
+}
+
+async function sbToggleActivo(id, activo) {
+  try {
+    await _db.collection('sitiosBusqueda').doc(id).update({ activo });
+  } catch(e) {
+    _uiAlert('Error al actualizar: ' + e.message, 'error');
+  }
+}
+
+async function sbEliminar(id, nombre) {
+  const ok = await _uiConfirm(`¿Eliminar "${nombre}"?`, '⚠️ Esta acción no se puede deshacer.', 'Eliminar', 'danger');
+  if (!ok) return;
+  try {
+    await _db.collection('sitiosBusqueda').doc(id).delete();
+    initSitiosBusqueda();
+    _uiAlert(`Sitio "${nombre}" eliminado.`, 'success');
+  } catch(e) {
+    _uiAlert('Error al eliminar: ' + e.message, 'error');
+  }
 }
 </script>
 
