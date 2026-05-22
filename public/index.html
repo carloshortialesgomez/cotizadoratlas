@@ -1206,7 +1206,7 @@ td.center{text-align:center}
             <div style="font-size:13px;font-weight:600">Los resultados de búsqueda aparecerán aquí</div>
             <div style="font-size:11px">Escribe una descripción arriba y presiona <strong>Buscar precios</strong></div>
           </div>
-          <div id="simMlResults" style="display:none"></div>
+          <div id="simCseResults"></div>
         </div>
       </div>
     </div>
@@ -5342,6 +5342,49 @@ window.onload = async () => {
 /* =============================================
    SIMULADOR MULTI-CANAL
 ============================================= */
+// ── Google CSE Widget (gratuito, no requiere facturación) ────────────────────
+let _cseLoaded  = false;
+let _cseReady   = false;
+let _cseEl      = null;
+let _csePending = null;
+
+function _simCargarCSE() {
+  if (_cseLoaded) return;
+  _cseLoaded = true;
+  window.__gcse = {
+    parsetags: 'explicit',
+    callback: function() {
+      try {
+        google.search.cse.element.render({
+          div:   'simCseResults',
+          tag:   'searchresults-only',
+          gname: 'atlasCompSim',
+          attributes: { linkTarget: '_blank', enableHistory: false }
+        });
+        _cseEl   = google.search.cse.element.getElement('atlasCompSim');
+        _cseReady = true;
+        if (_csePending) { _cseEl.execute(_csePending); _csePending = null; }
+      } catch(e) { console.warn('CSE widget error:', e); }
+    }
+  };
+  const s = document.createElement('script');
+  s.async = true;
+  s.src   = `https://cse.google.com/cse.js?cx=${GSEARCH_CX}`;
+  document.head.appendChild(s);
+}
+
+function _simEjecutarCSE(query) {
+  const ph  = document.getElementById('simGscPlaceholder');
+  if (ph) ph.style.display = 'none';
+  if (_cseReady && _cseEl) {
+    _cseEl.execute(query);
+  } else {
+    _csePending = query;
+    _simCargarCSE();
+  }
+  setTimeout(() => document.getElementById('simGscArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+}
+
 function initSimulador() {
   simRenderSkuList();
 }
@@ -5523,40 +5566,11 @@ async function simBuscarCompetidores() {
 
   setTimeout(() => document.getElementById('simGscArea')?.scrollIntoView({ behavior:'smooth', block:'start' }), 150);
 
-  // Intentar Google Custom Search JSON API si está configurada
-  if (GSEARCH_API_KEY && GSEARCH_CX) {
-    try {
-      const url  = `https://www.googleapis.com/customsearch/v1?key=${GSEARCH_API_KEY}&cx=${GSEARCH_CX}&q=${enc}+precio+mexico&num=10`;
-      const resp = await fetch(url);
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error.message);
-      const items = data.items || [];
-      if (items.length) {
-        res.innerHTML = `
-          <div style="font-size:11px;color:var(--text3);margin-bottom:12px">${items.length} resultados · Google Custom Search</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${items.map(item => {
-              const price = item.pagemap?.offer?.[0]?.price || item.pagemap?.product?.[0]?.price || '';
-              return `<a href="${item.link}" target="_blank" rel="noopener"
-                style="text-decoration:none;display:block;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;transition:border-color .15s"
-                onmouseover="this.style.borderColor='var(--atlas-navy)'" onmouseout="this.style.borderColor='var(--border)'">
-                <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
-                  <div style="flex:1;min-width:0">
-                    <div style="font-size:12px;font-weight:600;color:var(--atlas-navy);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${item.displayLink}</div>
-                    <div style="font-size:11px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${item.snippet}</div>
-                  </div>
-                  ${price ? `<div style="font-size:14px;font-weight:700;color:var(--atlas-navy);white-space:nowrap;flex-shrink:0">${price}</div>` : ''}
-                </div>
-              </a>`;
-            }).join('')}
-          </div>`;
-        return;
-      }
-    } catch(_) { /* continúa al fallback */ }
-  }
+  // Mostrar resultados CSE inline
+  _simEjecutarCSE(q + ' precio mexico');
+  return;
 
-  // Fallback: links directos prominentes
+  // Fallback: links directos prominentes (se usa si CSE falla)
   res.innerHTML = `
     <div style="text-align:center;padding:24px 16px 8px;color:var(--text2)">
       <div style="font-size:28px;margin-bottom:10px">🔍</div>
