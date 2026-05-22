@@ -5556,15 +5556,7 @@ async function simBuscarCompetidores() {
 
   // Mostrar área de resultados
   const ph  = document.getElementById('simGscPlaceholder');
-  const res = document.getElementById('simMlResults');
-  if (ph)  ph.style.display  = 'none';
-  if (res) { res.style.display = 'block'; res.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--text3)">
-      <div style="width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--atlas-navy);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>
-      Buscando en Mercado Libre...
-    </div>`; }
-
-  setTimeout(() => document.getElementById('simGscArea')?.scrollIntoView({ behavior:'smooth', block:'start' }), 150);
+  if (ph) ph.style.display = 'none';
 
   // Mostrar resultados CSE inline
   _simEjecutarCSE(q + ' precio mexico');
