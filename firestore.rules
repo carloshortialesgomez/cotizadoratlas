@@ -34,6 +34,9 @@ service cloud.firestore {
     match /apoyoMarca/{docId} {
       allow read, write: if true;
     }
+    match /sitiosBusqueda/{docId} {
+      allow read, write: if true;
+    }
     match /{document=**} {
       allow read, write: if false;
     }
