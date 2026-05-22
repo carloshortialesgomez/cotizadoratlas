@@ -1,7 +1,7 @@
 {
   "name": "cotizador-functions",
   "description": "Cloud Functions — Cotizador KAM Atlas",
-  "engines": { "node": "18" },
+  "engines": { "node": "20" },
   "main": "index.js",
   "scripts": {
     "deploy": "firebase deploy --only functions"
