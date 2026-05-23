@@ -4160,7 +4160,7 @@ async function exportarPDFCotizacion() {
   const esAut = c.estado==='autorizada'||c.autorizada;
   const canalObj = canales.find(ch => ch.nombre === c.canal || ch.id === c.canalId);
   const canalLogo = canalObj?.logoUrl ? await _fetchImgDataUrl(canalObj.logoUrl).catch(()=>'') : '';
-  await _pdfHeader(doc,W,M,'Cotización '+c.canal, esAut?`AUTORIZADA · ${autEn} · por ${c.autorizadoPor||'admin'}`:'PENDIENTE DE AUTORIZACIÓN', c.folio||c.id, new Date(c.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'}), (c.userName||c.userEmail), canalLogo);
+  _pdfHeader(doc,W,M,'Cotización '+c.canal, esAut?`AUTORIZADA · ${autEn} · por ${c.autorizadoPor||'admin'}`:'PENDIENTE DE AUTORIZACIÓN', c.folio||c.id, new Date(c.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'}), (c.userName||c.userEmail), canalLogo);
   let y=24;
 
   const items = (c.items||[]).filter(i=>i.estado!=='err');
@@ -4190,7 +4190,7 @@ async function exportarPDFCotizacion() {
   items.forEach((it,i)=>{
     if(y+rowH>H-14){
       doc.addPage();
-      await _pdfHeader(doc,W,M,'Cotización '+c.canal,hSub,hFolio,hFecha,hAutor,canalLogo);
+      _pdfHeader(doc,W,M,'Cotización '+c.canal,hSub,hFolio,hFecha,hAutor,canalLogo);
       y=drawTabHead(24);
     }
     if(i%2===0){doc.setFillColor(247,249,253);doc.rect(sx,y,tW,rowH,'F');}
@@ -4281,7 +4281,7 @@ function descargarCatalogoEnvios() {
 /* =============================================
    GENERACIÓN DE PDF
 ============================================= */
-async function _pdfHeader(doc, W, M, title, subtitle, folio, fecha, autor, canalLogoDataUrl = '') {
+function _pdfHeader(doc, W, M, title, subtitle, folio, fecha, autor, canalLogoDataUrl = '') {
   doc.setFillColor(200,32,47);
   doc.rect(0,0,W,20,'F');
   // Logo Atlas (izquierda)
@@ -4351,7 +4351,7 @@ async function generarPDF() {
   const canalObj = canales.find(ch => ch.nombre === r.canal);
   const canalLogo = canalObj?.logoUrl ? await _fetchImgDataUrl(canalObj.logoUrl).catch(()=>'') : '';
 
-  await _pdfHeader(doc,W,M,'Cotización de venta','PENDIENTE DE AUTORIZACIÓN · Vigencia 15 días',folio,fecha,'Elaboró: '+currentUser.nombre,canalLogo);
+  _pdfHeader(doc,W,M,'Cotización de venta','PENDIENTE DE AUTORIZACIÓN · Vigencia 15 días',folio,fecha,'Elaboró: '+currentUser.nombre,canalLogo);
   let y=24;
 
   // Info strip
@@ -4479,8 +4479,8 @@ async function exportarPDFMasivo() {
   const fecha = new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   const canalLogo = currentChannel?.logoUrl ? await _fetchImgDataUrl(currentChannel.logoUrl).catch(()=>'') : '';
 
-  const drawHeader = async () => {
-    await _pdfHeader(doc,W,M,`Cotización Masiva — ${currentChannel.nombre}`,'PENDIENTE DE AUTORIZACIÓN · Vigencia 15 días naturales',folio,fecha,'Elaboró: '+currentUser.nombre,canalLogo);
+  const drawHeader = () => {
+    _pdfHeader(doc,W,M,`Cotización Masiva — ${currentChannel.nombre}`,'PENDIENTE DE AUTORIZACIÓN · Vigencia 15 días naturales',folio,fecha,'Elaboró: '+currentUser.nombre,canalLogo);
   };
 
   // columnas de la tabla
@@ -4547,7 +4547,7 @@ async function exportarPDFMasivo() {
   };
 
   // ── Página 1 ──
-  await drawHeader();
+  drawHeader();
   let y = 24;
 
   // Métricas resumen
@@ -4573,7 +4573,7 @@ async function exportarPDFMasivo() {
   for(let i=0; i<datos.length; i++){
     if(y + rowH > H-14){
       doc.addPage();
-      await drawHeader();
+      drawHeader();
       y = drawTableHeader(24);
       rowIdx = 0;
     }
