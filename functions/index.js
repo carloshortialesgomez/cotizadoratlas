@@ -65,12 +65,14 @@ exports.buscarCompetidores = functions.https.onRequest(async (req, res) => {
         : null;
 
       resultados.push({
-        title:     item.title  || '',
-        link:      itemLink,
-        image:     item.imageUrl || null,
+        title:      item.title  || '',
+        link:       itemLink,
+        image:      item.imageUrl || null,
         price,
-        store:     sitioMatch?.nombre || itemSource || 'Tienda',
-        storeIcon: sitioMatch?.icono  || _iconPorSource(itemSource),
+        store:      sitioMatch?.nombre   || itemSource || 'Tienda',
+        storeIcon:  sitioMatch?.icono    || _iconPorSource(itemSource),
+        storeImage: sitioMatch?.imagenUrl || '',
+        storeDomain: sitioMatch?.dominio  || '',
       });
     }
   } catch (e) {
